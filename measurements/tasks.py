@@ -111,8 +111,7 @@ def run_measurement(self, job_id: str) -> dict:
 
         job.save()
 
-        # ── Increment tier usage counter ──────────────────────────────────────
-        job.user.increment_job_count()
+        # Usage counting moved to Gemini API call endpoints (views.py)
 
         logger.info(
             "Job %s done: %.4f m tier=%s elapsed=%.1fs",

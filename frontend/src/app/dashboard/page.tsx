@@ -34,8 +34,7 @@ export default function DashboardPage() {
   if (loading || !user) return null;
 
   const limit     = user.tier_limits.jobs_per_month;
-  const usedPct   = limit >= 99999 ? 0 : (user.jobs_used_this_month / limit) * 100;
-  const remaining = user.jobs_remaining;
+  const usedPct   = (user.jobs_used_this_month / limit) * 100;
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -60,7 +59,7 @@ export default function DashboardPage() {
                 Monthly Usage
               </span>
               <span style={{ fontFamily: 'Space Mono, monospace', fontSize: '0.82rem', color: 'var(--text)' }}>
-                {user.jobs_used_this_month} / {limit >= 99999 ? '∞' : limit}
+                {user.jobs_used_this_month} / {limit}
               </span>
             </div>
             <div style={{ height: '4px', background: 'var(--bg-2)', borderRadius: '2px', overflow: 'hidden' }}>
@@ -72,11 +71,6 @@ export default function DashboardPage() {
                 boxShadow: `0 0 8px ${usedPct > 80 ? 'var(--red)' : 'var(--pink)'}`,
                 transition: 'width 0.4s',
               }} />
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-              {remaining === 0
-                ? <span style={{ color: 'var(--red)' }}>Limit reached — <a href="/pricing" style={{ color: 'var(--pink)' }}>upgrade</a></span>
-                : `${remaining} remaining`}
             </div>
           </div>
         </div>
@@ -97,7 +91,7 @@ export default function DashboardPage() {
             }}>
               <span className="neon-pink">⬆</span> NEW MEASUREMENT
             </h2>
-            {remaining === 0 ? (
+            {user.jobs_remaining === 0 ? (
               <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                 <div style={{ color: 'var(--red)', fontFamily: 'Space Mono, monospace', fontSize: '0.8rem', marginBottom: '1rem' }}>
                   Monthly limit reached

@@ -3,6 +3,7 @@ from rest_framework.decorators import permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import MeasurementJob, JobStatus
 from .serializers import JobCreateSerializer, JobResultSerializer
@@ -13,6 +14,18 @@ from django.http import JsonResponse
 import base64
 from v8_generate import generate_mockup, generate_bw
 from v8_pipeline import V8Pipeline
+
+
+def _count_gemini_call(request, n=1):
+    """Increment user's monthly usage by n (one per Gemini API call)."""
+    try:
+        auth_result = JWTAuthentication().authenticate(request)
+        if auth_result:
+            user, _ = auth_result
+            for _ in range(n):
+                user.increment_job_count()
+    except Exception:
+        pass  # unauthenticated or invalid token — skip counting
 
 
 def _result_to_dict(r) -> dict:
@@ -172,6 +185,7 @@ def api_generate_mockup(request):
             additional,
         )
         image_b64 = base64.b64encode(mockup_bytes).decode()
+        _count_gemini_call(request, n=1)
         return JsonResponse({"image_b64": image_b64})
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=500)
@@ -200,6 +214,7 @@ def api_generate_bw(request):
         mockup_bytes = mockup_file.read()
         bw_bytes = generate_bw(mockup_bytes, mockup_file.content_type, additional)
         image_b64 = base64.b64encode(bw_bytes).decode()
+        _count_gemini_call(request, n=1)
         return JsonResponse({"image_b64": image_b64})
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=500)
@@ -262,6 +277,7 @@ def api_full_pipeline(request):
             filename="studio_bw.png",
             force_format=force_format or "bw",
         )
+        _count_gemini_call(request, n=2)  # mockup + B&W = 2 Gemini calls
         return JsonResponse({
             "mockup_b64":  base64.b64encode(mockup_bytes).decode(),
             "bw_b64":      base64.b64encode(bw_bytes).decode(),
@@ -319,6 +335,7 @@ def api_bw_only_pipeline(request):
             filename="studio_bw.png",
             force_format=force_format or "bw",
         )
+        _count_gemini_call(request, n=1)  # B&W = 1 Gemini call
         return JsonResponse({
             "bw_b64":      base64.b64encode(bw_bytes).decode(),
             "measurement": _result_to_dict(result),
