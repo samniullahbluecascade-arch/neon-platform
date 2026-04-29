@@ -8,6 +8,7 @@ DATABASES = {
 }
 
 DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
 # Allow all in dev
 CORS_ALLOW_ALL_ORIGINS = True

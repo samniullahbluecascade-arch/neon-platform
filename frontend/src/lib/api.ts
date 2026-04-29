@@ -31,6 +31,8 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const t = token();
   if (t) hdrs['Authorization'] = `Bearer ${t}`;
   if (!(init.body instanceof FormData)) hdrs['Content-Type'] = 'application/json';
+  // Skip ngrok browser interstitial on free tier
+  hdrs['ngrok-skip-browser-warning'] = 'true';
 
   let r = await fetch(`${BASE}${path}`, { ...init, headers: hdrs });
 
