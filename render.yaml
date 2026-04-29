@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: neon-platform-api
+    runtime: python
+    buildCommand: bash build.sh
+    startCommand: gunicorn neon_platform.wsgi --bind 0.0.0.0:$PORT --timeout 300
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: neon_platform.settings.staging
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.3"
