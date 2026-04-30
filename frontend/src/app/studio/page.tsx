@@ -195,7 +195,9 @@ export default function StudioPage() {
           NEON SIGN STUDIO
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-          Logo → Colored Mockup → B&amp;W Sketch → LOC Measurement
+          {mode === 'full'
+            ? 'Logo → Neon Mockup → B&W Tube Sketch → LOC + Price'
+            : 'Colored Mockup → B&W Tube Sketch → LOC + Price'}
         </p>
 
         {/* Mode toggle */}
@@ -403,6 +405,25 @@ function Results({ m }: { m: MeasurementResult }) {
       <h3 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.4rem', letterSpacing: '0.06em', marginBottom: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.6rem' }}>
         📊 LOC MEASUREMENT RESULTS
       </h3>
+      {/* Estimated price */}
+      <div style={{
+        padding: '1rem 1.25rem', marginBottom: '1rem',
+        background: 'rgba(0,255,157,0.06)', border: '1px solid rgba(0,255,157,0.2)', borderRadius: '6px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Estimated Sign Price</div>
+          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '2rem', fontWeight: 700, color: '#00ff9d', textShadow: '0 0 16px rgba(0,255,157,0.4)' }}>
+            ${Math.max(25, Math.round(m.measured_m * 10))}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Tube Length</div>
+          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '1.6rem', fontWeight: 700, color: 'var(--text)' }}>
+            {m.measured_m?.toFixed(2)}<span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '3px' }}>m</span>
+          </div>
+        </div>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
         <Metric label="Measured LOC" value={m.measured_m?.toFixed(4)} unit="m" />
         <Metric label="Tier" value={tier} valueColor={TIER_COLOR[tier] ?? '#888'} />

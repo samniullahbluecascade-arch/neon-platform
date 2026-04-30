@@ -5,7 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 
 const TIER_COLORS: Record<string, string> = {
   free:       '#6b7280',
-  pro:        '#00d4ff',
+  starter:    '#00d4ff',
+  business:   '#ff2d78',
   enterprise: '#ffb300',
 };
 
@@ -60,7 +61,7 @@ export default function NavBar() {
       {/* Nav links */}
       {user ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          {link('/dashboard', 'Dashboard')}
+          {link('/dashboard', 'Quick Measure')}
           {link('/studio', 'Studio')}
           {link('/pricing', 'Pricing')}
 
