@@ -1,6 +1,5 @@
 'use client';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -260,19 +259,17 @@ export default function JobDetailPage() {
                   </button>
                 </div>
                 <div style={{
-                  position: 'relative',
                   borderRadius: '4px',
                   overflow: 'hidden',
                   background: 'var(--bg-0)',
                   height: overlay ? '80vh' : '320px',
                   transition: 'height 0.3s ease',
                 }}>
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={overlayUrl}
                     alt="Ridge overlay"
-                    fill
-                    style={{ objectFit: 'contain' }}
-                    unoptimized
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                   />
                 </div>
               </div>
@@ -280,8 +277,9 @@ export default function JobDetailPage() {
             {ridgeUrl && (
               <div className="card" style={{ padding: '1rem', overflow: 'hidden' }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Ridge Map</div>
-                <div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-0)', height: '320px' }}>
-                  <Image src={ridgeUrl} alt="Ridge map" fill style={{ objectFit: 'contain' }} unoptimized />
+                <div style={{ borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-0)', height: '320px' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ridgeUrl} alt="Ridge map" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               </div>
             )}
