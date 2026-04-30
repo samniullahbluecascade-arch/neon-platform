@@ -27,6 +27,7 @@ export default function StudioPage() {
   const [bg, setBg] = useState<File | null>(null);
   const [mockupFile, setMockupFile] = useState<File | null>(null);
   const [extra, setExtra] = useState('');
+  const [uvNeon, setUvNeon] = useState(false);
   const [width, setWidth] = useState('24');
   const [gt, setGt] = useState('');
 
@@ -77,6 +78,12 @@ export default function StudioPage() {
     setBg(e.target.files?.[0] ?? null);
   };
 
+  const UV_INSTRUCTION =
+    "leverage all your reasoning to intelligently find out where UV printing is present in the design and don't ever craft that portion with LED neon tube but simply keep it dull and with no glow at all.";
+
+  const buildAdditional = () =>
+    [extra.trim(), uvNeon ? UV_INSTRUCTION : ''].filter(Boolean).join('\n');
+
   const widthNum = () => {
     const w = parseFloat(width);
     return !w || w <= 0 ? null : w;
@@ -90,7 +97,8 @@ export default function StudioPage() {
       const fd = new FormData();
       fd.append('logo', logo);
       if (bg) fd.append('background', bg);
-      if (extra) fd.append('additional', extra);
+      const _addStep1 = buildAdditional();
+      if (_addStep1) fd.append('additional', _addStep1);
       const r = await studio.generateMockup(fd);
       setMockupB64(r.image_b64);
       setC1State('done'); setC2State('done');
@@ -149,7 +157,8 @@ export default function StudioPage() {
       const fd = new FormData();
       fd.append('logo', logo);
       if (bg) fd.append('background', bg);
-      if (extra) fd.append('additional', extra);
+      const _addFull = buildAdditional();
+      if (_addFull) fd.append('additional', _addFull);
       fd.append('width_inches', String(w));
       if (gt) fd.append('ground_truth_m', gt);
       const r = await studio.fullPipeline(fd);
@@ -246,6 +255,34 @@ export default function StudioPage() {
               className="input-neon"
               style={{ minHeight: '54px', resize: 'vertical', fontSize: '0.78rem' }}
             />
+            {mode === 'full' && (
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                marginTop: '0.7rem', cursor: 'pointer', userSelect: 'none',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={uvNeon}
+                  onChange={e => setUvNeon(e.target.checked)}
+                  style={{ accentColor: '#ff2d78', width: '14px', height: '14px', cursor: 'pointer' }}
+                />
+                <span style={{
+                  fontSize: '0.72rem', color: uvNeon ? '#ff2d78' : 'var(--text-muted)',
+                  textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: uvNeon ? 700 : 400,
+                  transition: 'color 0.15s',
+                }}>
+                  UV_NEON SIGN
+                </span>
+                {uvNeon && (
+                  <span style={{
+                    fontSize: '0.6rem', color: 'var(--text-dim)', background: 'rgba(255,45,120,0.08)',
+                    border: '1px solid rgba(255,45,120,0.25)', padding: '1px 6px', borderRadius: '3px',
+                  }}>
+                    UV skip injected
+                  </span>
+                )}
+              </label>
+            )}
             <Preview src={inputPreview} placeholder="Input preview appears here" />
           </Card>
 
