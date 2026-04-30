@@ -16,7 +16,7 @@ import PipelineFlow from '@/components/PipelineFlow';
 import ScrollReveal from '@/components/ScrollReveal';
 
 const FEATURES = [
-  { icon: '◈', label: 'V8 Pipeline', desc: 'Frangi+DoG ridge extraction with Bézier/arc geometry. Physics-validated.' },
+  { icon: '◈', label: 'Neon Precision Pipeline', desc: 'Frangi+DoG ridge extraction with Bézier/arc geometry. Physics-validated.' },
   { icon: '◉', label: '±5% Accuracy', desc: 'GLASS_CUT tier achieves glass-ready precision on clean BW files.' },
   { icon: '◇', label: 'Any Format', desc: 'PNG, JPG, SVG, CDR. Handles glow, transparent, BW signs automatically.' },
   { icon: '△', label: 'Instant Quote', desc: 'Upload → measure → LOC range in seconds. No manual tracing.' },
@@ -77,7 +77,7 @@ export default function LandingPage() {
             textTransform: 'uppercase',
             marginBottom: '1.5rem',
           }}>
-            <LetterReveal text="V8 LOC Measurement Engine" delay={0.2} stagger={0.03} />
+            <LetterReveal text="Neon Precision Studio" delay={0.2} stagger={0.03} />
           </div>
 
           <h1 style={{
@@ -153,8 +153,8 @@ export default function LandingPage() {
       }}>
         {[
           { val: '≤5%',   label: 'Glass-cut error' },
-          { val: '170+',  label: 'Ground-truth images' },
-          { val: 'V8',    label: 'Pipeline version' },
+          { val: 'Data First',  label: 'Architecture' },
+          { val: 'Extreme',    label: 'Precisioned Pipeline' },
           { val: '<5s',   label: 'Avg. measure time' },
         ].map(s => (
           <div key={s.label} style={{ textAlign: 'center' }}>
@@ -376,7 +376,7 @@ export default function LandingPage() {
         
         <ScrollReveal animation="fade-up" delay={0.2}>
           <p style={{ color: 'var(--text-dim)', marginBottom: '2rem', fontSize: '1rem', position: 'relative' }}>
-            Free tier — 10 measurements/month. No card required.
+            Free tier — 20 mockup generations + measurements/month. No card required.
           </p>
         </ScrollReveal>
         
@@ -398,7 +398,7 @@ export default function LandingPage() {
         fontSize: '0.78rem',
         fontFamily: 'Space Mono, monospace',
       }}>
-        <span className="gradient-text">NEON PLATFORM</span> — V8 LOC ENGINE
+        <span className="gradient-text">NEON PLATFORM</span> — Neon Preciosion Studio 
       </footer>
     </div>
   );
