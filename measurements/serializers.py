@@ -51,8 +51,7 @@ class JobResultSerializer(serializers.ModelSerializer):
     def _build_url(self, obj, field):
         image = getattr(obj, field, None)
         if image:
-            request = self.context.get("request")
-            return request.build_absolute_uri(image.url) if request else image.url
+            return image.url  # relative path — frontend prepends API base
         return None
 
     def get_overlay_url(self, obj):
