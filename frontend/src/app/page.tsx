@@ -88,7 +88,7 @@ export default function LandingPage() {
             color: 'var(--text)',
             marginBottom: '0.2rem',
           }}>
-            <LetterReveal text="MEASURE" delay={0.4} stagger={0.04} />
+            <LetterReveal text="DESIGN" delay={0.4} stagger={0.04} />
           </h1>
           <h1 style={{
             fontFamily: 'Bebas Neue, sans-serif',
@@ -97,7 +97,7 @@ export default function LandingPage() {
             letterSpacing: '0.02em',
             marginBottom: '0.2rem',
           }} className="neon-pink animate-flicker">
-            <LetterReveal text="YOUR NEON" delay={0.7} stagger={0.04} letterClassName="neon-pink" />
+            <LetterReveal text="CRAFT, MEASURE" delay={0.7} stagger={0.04} letterClassName="neon-pink" />
           </h1>
           <h1 style={{
             fontFamily: 'Bebas Neue, sans-serif',
