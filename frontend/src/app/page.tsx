@@ -97,7 +97,7 @@ export default function LandingPage() {
             letterSpacing: '0.02em',
             marginBottom: '0.2rem',
           }} className="neon-pink animate-flicker">
-            <LetterReveal text="CRAFT, MEASURE" delay={0.7} stagger={0.04} letterClassName="neon-pink" />
+            <LetterReveal text="CRAFT, QOUTE" delay={0.7} stagger={0.04} letterClassName="neon-pink" />
           </h1>
           <h1 style={{
             fontFamily: 'Bebas Neue, sans-serif',
