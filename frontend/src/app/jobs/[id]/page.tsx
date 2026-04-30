@@ -78,8 +78,10 @@ export default function JobDetailPage() {
   const statusColor   = STATUS_COLOR[job.status] ?? 'var(--text-muted)';
   const isActive      = job.status === 'pending' || job.status === 'processing';
   const tierCfg       = job.tier_result ? TIER_CONFIG[job.tier_result as keyof typeof TIER_CONFIG] : null;
-  const overlayUrl    = mediaUrl(job.overlay_image);
-  const ridgeUrl      = mediaUrl(job.ridge_image);
+  const mockupUrl     = mediaUrl(job.mockup_url);
+  const bwUrl         = mediaUrl(job.bw_url);
+  const overlayUrl    = mediaUrl(job.overlay_url);
+  const ridgeUrl      = mediaUrl(job.ridge_url);
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -190,6 +192,29 @@ export default function JobDetailPage() {
                   Δ {job.error_pct.toFixed(1)}% vs ground truth
                 </div>
               )}
+
+              {job.estimated_price != null && (
+                <div style={{
+                  marginTop: '1.25rem',
+                  padding: '0.75rem 1rem',
+                  background: 'rgba(0,255,157,0.06)',
+                  border: '1px solid rgba(0,255,157,0.2)',
+                  borderRadius: '6px',
+                }}>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>
+                    Estimated Sign Price
+                  </div>
+                  <div style={{
+                    fontFamily: 'Space Mono, monospace',
+                    fontSize: '1.8rem',
+                    fontWeight: 700,
+                    color: '#00ff9d',
+                    textShadow: '0 0 16px rgba(0,255,157,0.4)',
+                  }}>
+                    ${job.estimated_price.toFixed(0)}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Stats grid */}
@@ -222,7 +247,33 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Images */}
+        {/* Generated images (mockup + B&W) */}
+        {(mockupUrl || bwUrl) && (
+          <div style={{ display: 'grid', gridTemplateColumns: mockupUrl && bwUrl ? '1fr 1fr' : '1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {mockupUrl && (
+              <div className="card" style={{ padding: '1rem', overflow: 'hidden' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                  Neon Mockup
+                </div>
+                <div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-0)', height: '320px' }}>
+                  <Image src={mockupUrl} alt="Neon mockup" fill style={{ objectFit: 'contain' }} unoptimized />
+                </div>
+              </div>
+            )}
+            {bwUrl && (
+              <div className="card" style={{ padding: '1rem', overflow: 'hidden' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                  B&W Tube Sketch
+                </div>
+                <div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-0)', height: '320px' }}>
+                  <Image src={bwUrl} alt="B&W tube sketch" fill style={{ objectFit: 'contain' }} unoptimized />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Overlay images */}
         {(overlayUrl || ridgeUrl) && (
           <div style={{ display: 'grid', gridTemplateColumns: ridgeUrl ? '2fr 1fr' : '1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
             {overlayUrl && (

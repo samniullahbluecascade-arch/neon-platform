@@ -50,6 +50,13 @@ class MeasurementJob(models.Model):
     physics_ok       = models.BooleanField(null=True)
     input_format     = models.CharField(max_length=30, blank=True)
 
+    # Sign price = max(25, measured_m * 10)
+    estimated_price = models.FloatField(null=True, blank=True)
+
+    # Generated images from Gemini (mockup + B&W)
+    mockup_image = models.ImageField(upload_to="mockups/%Y/%m/%d/", null=True, blank=True)
+    bw_image     = models.ImageField(upload_to="bw/%Y/%m/%d/",      null=True, blank=True)
+
     # Visualisation overlays stored as separate media files
     overlay_image = models.ImageField(upload_to="overlays/%Y/%m/%d/", null=True, blank=True)
     ridge_image   = models.ImageField(upload_to="ridges/%Y/%m/%d/",   null=True, blank=True)

@@ -55,6 +55,8 @@ def run_measurement(self, job_id: str) -> dict:
             sys.path.insert(0, settings.V8_ENGINE_PATH)
 
         from v8_pipeline import V8Pipeline
+        from v8_generate import generate_mockup, generate_bw
+
         pipeline = V8Pipeline(render_vis=True)
 
         # ── Read image bytes ──────────────────────────────────────────────────
@@ -62,14 +64,55 @@ def run_measurement(self, job_id: str) -> dict:
         img_bytes = job.image.read()
         job.image.close()
 
-        # ── Run pipeline ──────────────────────────────────────────────────────
+        # ── Phase 1: Generate mockup from uploaded image ─────────────────────
+        gemini_calls = 0
+        ext = (job.image.name.rsplit(".", 1)[-1] if "." in job.image.name else "png").lower()
+        mime_map = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "svg": "image/svg+xml", "webp": "image/webp"}
+        logo_mime = mime_map.get(ext, "image/png")
+        try:
+            mockup_bytes = generate_mockup(
+                img_bytes,
+                logo_mime,
+                None, None, "",
+            )
+            job.mockup_image.save(
+                f"{job_id}_mockup.png",
+                ContentFile(mockup_bytes),
+                save=False,
+            )
+            gemini_calls += 1
+        except Exception as gen_exc:
+            logger.warning("Job %s mockup generation failed (non-fatal): %s", job_id, gen_exc)
+            mockup_bytes = None
+
+        # ── Phase 2: Generate B&W from mockup (or original) ─────────────────
+        bw_source = mockup_bytes or img_bytes
+        try:
+            bw_bytes = generate_bw(bw_source, "image/png", "")
+            job.bw_image.save(
+                f"{job_id}_bw.png",
+                ContentFile(bw_bytes),
+                save=False,
+            )
+            gemini_calls += 1
+        except Exception as gen_exc:
+            logger.warning("Job %s B&W generation failed (non-fatal): %s", job_id, gen_exc)
+            bw_bytes = None
+
+        # ── Phase 3: Measure LOC from B&W (or original) ─────────────────────
+        measure_bytes = bw_bytes or img_bytes
         result = pipeline.measure_from_bytes(
-            img_bytes,
+            measure_bytes,
             job.width_inches,
             gt_m=job.ground_truth_m,
             filename=job.filename or job.image.name,
-            force_format=job.force_format or None,
+            force_format="bw" if bw_bytes else (job.force_format or None),
         )
+
+        # ── Count Gemini API calls ───────────────────────────────────────────
+        if gemini_calls > 0:
+            for _ in range(gemini_calls):
+                job.user.increment_job_count()
 
         # ── Persist result ────────────────────────────────────────────────────
         job.measured_m      = result.measured_m
@@ -90,6 +133,7 @@ def run_measurement(self, job_id: str) -> dict:
         job.reasoning       = result.reasoning or []
         job.physics_ok      = result.physics_ok
         job.input_format    = result.input_format or ""
+        job.estimated_price  = max(25.0, result.measured_m * 10)
         job.status          = JobStatus.DONE
         job.finished_at     = datetime.now(timezone.utc)
 
@@ -111,7 +155,7 @@ def run_measurement(self, job_id: str) -> dict:
 
         job.save()
 
-        # Usage counting moved to Gemini API call endpoints (views.py)
+        # Gemini usage counted above (after mockup/BW generation)
 
         logger.info(
             "Job %s done: %.4f m tier=%s elapsed=%.1fs",

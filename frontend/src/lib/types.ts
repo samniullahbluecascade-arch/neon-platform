@@ -4,7 +4,7 @@ export interface User {
   full_name: string;
   company: string;
   avatar_url: string;
-  tier: 'free' | 'pro' | 'enterprise';
+  tier: 'free' | 'starter' | 'business' | 'enterprise';
   jobs_used_this_month: number;
   jobs_remaining: number;
   tier_limits: { jobs_per_month: number; max_width_px: number; ml_correction: boolean };
@@ -37,9 +37,12 @@ export interface Job {
   reasoning: string[];
   physics_ok: boolean | null;
   input_format: string;
+  estimated_price: number | null;
   error_message: string;
-  overlay_image: string | null;
-  ridge_image: string | null;
+  mockup_url: string | null;
+  bw_url: string | null;
+  overlay_url: string | null;
+  ridge_url: string | null;
   created_at: string;
   finished_at: string | null;
 }

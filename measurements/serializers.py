@@ -27,6 +27,8 @@ class JobCreateSerializer(serializers.ModelSerializer):
 class JobResultSerializer(serializers.ModelSerializer):
     overlay_url = serializers.SerializerMethodField()
     ridge_url   = serializers.SerializerMethodField()
+    mockup_url  = serializers.SerializerMethodField()
+    bw_url      = serializers.SerializerMethodField()
 
     class Meta:
         model  = MeasurementJob
@@ -39,20 +41,28 @@ class JobResultSerializer(serializers.ModelSerializer):
             "loc_low_m", "loc_high_m", "area_m", "overcount_ratio",
             "n_paths", "n_straight_segs", "n_arc_segs", "n_freeform_segs",
             "error_pct", "elapsed_s", "reasoning", "physics_ok", "input_format",
+            "estimated_price",
             "error_message",
-            "overlay_url", "ridge_url",
+            "mockup_url", "bw_url", "overlay_url", "ridge_url",
             "created_at", "finished_at",
         ]
         read_only_fields = fields
 
-    def get_overlay_url(self, obj):
-        if obj.overlay_image:
+    def _build_url(self, obj, field):
+        image = getattr(obj, field, None)
+        if image:
             request = self.context.get("request")
-            return request.build_absolute_uri(obj.overlay_image.url) if request else obj.overlay_image.url
+            return request.build_absolute_uri(image.url) if request else image.url
         return None
 
+    def get_overlay_url(self, obj):
+        return self._build_url(obj, "overlay_image")
+
     def get_ridge_url(self, obj):
-        if obj.ridge_image:
-            request = self.context.get("request")
-            return request.build_absolute_uri(obj.ridge_image.url) if request else obj.ridge_image.url
-        return None
+        return self._build_url(obj, "ridge_image")
+
+    def get_mockup_url(self, obj):
+        return self._build_url(obj, "mockup_image")
+
+    def get_bw_url(self, obj):
+        return self._build_url(obj, "bw_image")

@@ -8,12 +8,13 @@ import { useAuth } from '@/context/AuthContext';
 import NavBar from '@/components/NavBar';
 
 const FEATURES: Record<string, string[]> = {
-  free:       ['10 measurements/month', '2000 px max width', 'Standard accuracy', 'REST API access'],
-  pro:        ['500 measurements/month', '8000 px max width', 'ML correction enabled', 'Priority queue', 'All formats supported'],
-  enterprise: ['Unlimited measurements', 'No resolution limit', 'ML correction enabled', 'SLA guarantee', 'Dedicated support', 'Custom integrations'],
+  free:       ['20 requests/month', '2000 px max width', 'Standard accuracy', 'REST API access'],
+  starter:    ['200 requests/month', '4000 px max width', 'Standard accuracy', 'All formats supported', 'Email support'],
+  business:   ['600 requests/month', '8000 px max width', 'ML correction enabled', 'Priority processing', 'All formats supported'],
+  enterprise: ['1,500 requests/month', 'No resolution limit', 'ML correction enabled', 'SLA guarantee', 'Dedicated support', 'Custom integrations'],
 };
 
-const ACCENT: Record<string, string> = { free: '#6b7280', pro: '#00d4ff', enterprise: '#ffb300' };
+const ACCENT: Record<string, string> = { free: '#6b7280', starter: '#00d4ff', business: '#ff2d78', enterprise: '#ffb300' };
 
 export default function PricingPage() {
   const router      = useRouter();

@@ -90,6 +90,17 @@ export default function JobCard({ job }: { job: Job }) {
                 {job.measured_m.toFixed(2)}
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '3px' }}>m</span>
               </div>
+              {job.estimated_price != null && (
+                <div style={{
+                  fontFamily: 'Space Mono, monospace',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  color: '#00ff9d',
+                  marginTop: '2px',
+                }}>
+                  ${job.estimated_price.toFixed(0)}
+                </div>
+              )}
               {job.tier_result && <TierBadge tier={job.tier_result} />}
             </div>
           ) : (

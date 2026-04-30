@@ -7,14 +7,16 @@ from django.utils import timezone
 
 class Tier(models.TextChoices):
     FREE       = "free",       "Free"
-    PRO        = "pro",        "Pro"
+    STARTER    = "starter",    "Starter"
+    BUSINESS   = "business",   "Business"
     ENTERPRISE = "enterprise", "Enterprise"
 
 
 TIER_LIMITS = {
-    Tier.FREE:       {"jobs_per_month": 20,    "max_width_px": 2000,  "ml_correction": False},
-    Tier.PRO:        {"jobs_per_month": 500,   "max_width_px": 8000,  "ml_correction": True},
-    Tier.ENTERPRISE: {"jobs_per_month": 99999, "max_width_px": 99999, "ml_correction": True},
+    Tier.FREE:       {"jobs_per_month": 20,   "max_width_px": 2000,  "ml_correction": False},
+    Tier.STARTER:    {"jobs_per_month": 200,  "max_width_px": 4000,  "ml_correction": False},
+    Tier.BUSINESS:   {"jobs_per_month": 600,  "max_width_px": 8000,  "ml_correction": True},
+    Tier.ENTERPRISE: {"jobs_per_month": 1500, "max_width_px": 99999, "ml_correction": True},
 }
 
 

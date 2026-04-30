@@ -12,6 +12,11 @@ ALLOWED_HOSTS = ["*"]
 
 # Allow all in dev
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = [
+    "accept", "authorization", "content-type", "user-agent",
+    "x-csrftoken", "x-requested-with",
+    "ngrok-skip-browser-warning",
+]
 
 # Run Celery tasks inline (no Redis / worker needed in dev)
 CELERY_TASK_ALWAYS_EAGER = True
