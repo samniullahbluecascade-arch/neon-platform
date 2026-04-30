@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { jobs as jobsApi, mediaUrl } from '@/lib/api';
+import { jobs as jobsApi } from '@/lib/api';
 import type { Job } from '@/lib/types';
 import { TIER_CONFIG } from '@/lib/types';
 import NavBar from '@/components/NavBar';
@@ -77,8 +77,8 @@ export default function JobDetailPage() {
   const statusColor   = STATUS_COLOR[job.status] ?? 'var(--text-muted)';
   const isActive      = job.status === 'pending' || job.status === 'processing';
   const tierCfg       = job.tier_result ? TIER_CONFIG[job.tier_result as keyof typeof TIER_CONFIG] : null;
-  const overlayUrl    = mediaUrl(job.overlay_url);
-  const ridgeUrl      = mediaUrl(job.ridge_url);
+  const overlayUrl    = job.overlay_b64 ? `data:image/png;base64,${job.overlay_b64}` : null;
+  const ridgeUrl      = job.ridge_b64 ? `data:image/png;base64,${job.ridge_b64}` : null;
 
   return (
     <div style={{ minHeight: '100vh' }}>

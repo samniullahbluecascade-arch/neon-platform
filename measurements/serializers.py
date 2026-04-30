@@ -25,10 +25,8 @@ class JobCreateSerializer(serializers.ModelSerializer):
 
 
 class JobResultSerializer(serializers.ModelSerializer):
-    overlay_url = serializers.SerializerMethodField()
-    ridge_url   = serializers.SerializerMethodField()
-    mockup_url  = serializers.SerializerMethodField()
-    bw_url      = serializers.SerializerMethodField()
+    overlay_b64 = serializers.SerializerMethodField()
+    ridge_b64   = serializers.SerializerMethodField()
 
     class Meta:
         model  = MeasurementJob
@@ -43,25 +41,26 @@ class JobResultSerializer(serializers.ModelSerializer):
             "error_pct", "elapsed_s", "reasoning", "physics_ok", "input_format",
             "estimated_price",
             "error_message",
-            "mockup_url", "bw_url", "overlay_url", "ridge_url",
+            "overlay_b64", "ridge_b64",
             "created_at", "finished_at",
         ]
         read_only_fields = fields
 
-    def _build_url(self, obj, field):
+    def _image_to_b64(self, obj, field):
+        import base64
         image = getattr(obj, field, None)
         if image:
-            return image.url  # relative path — frontend prepends API base
+            try:
+                image.open("rb")
+                data = image.read()
+                image.close()
+                return base64.b64encode(data).decode()
+            except Exception:
+                return None
         return None
 
-    def get_overlay_url(self, obj):
-        return self._build_url(obj, "overlay_image")
+    def get_overlay_b64(self, obj):
+        return self._image_to_b64(obj, "overlay_image")
 
-    def get_ridge_url(self, obj):
-        return self._build_url(obj, "ridge_image")
-
-    def get_mockup_url(self, obj):
-        return self._build_url(obj, "mockup_image")
-
-    def get_bw_url(self, obj):
-        return self._build_url(obj, "bw_image")
+    def get_ridge_b64(self, obj):
+        return self._image_to_b64(obj, "ridge_image")

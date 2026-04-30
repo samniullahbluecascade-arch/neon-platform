@@ -39,10 +39,8 @@ export interface Job {
   input_format: string;
   estimated_price: number | null;
   error_message: string;
-  mockup_url: string | null;
-  bw_url: string | null;
-  overlay_url: string | null;
-  ridge_url: string | null;
+  overlay_b64: string | null;
+  ridge_b64: string | null;
   created_at: string;
   finished_at: string | null;
 }
