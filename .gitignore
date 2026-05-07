@@ -10,7 +10,7 @@ build/
 *.egg
 .pytest_cache/
 .mypy_cache/
-.neon_platform/claude/*
+.neon_platform/.claude/*
 .ruff_cache/
 .tox/
 .coverage

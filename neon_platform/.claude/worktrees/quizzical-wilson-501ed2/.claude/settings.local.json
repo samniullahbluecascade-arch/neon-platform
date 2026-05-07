@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"F:\\\\python_files\\\\Shopify App Development\\\\neon_platform\\\\frontend\")",
+      "Bash(ls 'C:\\\\Users\\\\office\\\\.claude\\\\projects\\\\F--python-files-Shopify-App-Development-neon-platform\\\\memory\\\\')",
+      "WebFetch(domain:www.signcustomiser.com)"
+    ]
+  }
+}

@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       neon_platform
+      POSTGRES_USER:     neon
+      POSTGRES_PASSWORD: neon_dev_pw
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neon"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn neon_platform.wsgi:application
+               --bind 0.0.0.0:8000
+               --workers 4
+               --timeout 120
+               --access-logfile -"
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: neon_platform.settings.development
+    volumes:
+      - .:/app
+      - media_data:/app/media
+      # Mount the V8 engine directory read-only
+      - ../Shopify App Development:/v8_engine:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:    { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: .
+    command: celery -A neon_platform worker --loglevel=info --concurrency=2
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: neon_platform.settings.development
+    volumes:
+      - .:/app
+      - media_data:/app/media
+      - ../Shopify App Development:/v8_engine:ro
+    depends_on:
+      db:    { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  beat:
+    build: .
+    command: celery -A neon_platform beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file: .env
+    environment:
+      DJANGO_SETTINGS_MODULE: neon_platform.settings.development
+    volumes:
+      - .:/app
+    depends_on:
+      db:    { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+volumes:
+  postgres_data:
+  media_data:
