@@ -77,12 +77,13 @@ graphify-out/
 entities.json
 mempalace.yaml
 
-# V8 dataset / training images (large, not source)
+# Experimentations/ V8 dataset / training images (large, not source)
 Ground_Truth/
 DT case/
 Failing/
 uploads_v8/
 _v8_pipeline_stub/
+v8_app
 
 # Misc
 *.bak
