@@ -1,0 +1,22 @@
+flask
+gunicorn
+django
+djangorestframework
+django-environ
+celery
+numpy
+opencv-python-headless
+Pillow
+scipy
+scikit-image
+
+# Gemini image generation (Phase 1 & 2 of the Studio pipeline)
+google-genai
+python-dotenv
+
+# Optional: only needed for SVG / CDR vector support
+svgpathtools
+cairosvg
+
+# Optional: only needed for KMeans-based component splitting
+scikit-learn

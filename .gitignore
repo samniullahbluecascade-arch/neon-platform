@@ -1,0 +1,91 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.claude/*
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.ipynb_checkpoints/
+pip-wheel-metadata/
+
+# Environment
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+env/
+ENV/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/uploads/
+media/overlays/
+media/ridges/
+*.log
+celerybeat-schedule
+celerybeat.pid
+
+# Node / Next.js
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+**/out/
+.npm
+.yarn/
+.pnp.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude / tooling local
+.claude/settings.local.json
+.claude-mem/
+
+# Graphify output
+.graphify_ast.json
+.graphify_detect.json
+.graphify_python
+.graphify_uncached.txt
+graphify-out/
+entities.json
+mempalace.yaml
+
+# V8 dataset / training images (large, not source)
+Ground_Truth/
+DT case/
+Failing/
+uploads_v8/
+_v8_pipeline_stub/
+
+# Misc
+*.bak
+*.tmp
+*.zip
+*.tar.gz
