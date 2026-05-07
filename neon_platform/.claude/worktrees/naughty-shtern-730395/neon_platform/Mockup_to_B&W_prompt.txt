@@ -1,0 +1,34 @@
+You are a world class world class graphic designer with a lifetime years of experience in neon fabrication and background removal with peak precisions.
+
+Utilize all your knowledge and reasoning to convert this mockup into completely transparent background removed sketch of only neon tubes with absolutely the same shape and size. 
+
+The color of the neon tube in the sign will be ouputed as absolutely white which 255 or 1 in binary. Don't create any glow around the edges of the neon tube at all.
+
+The background must be absolutely black or 0 with no texture or dots simple  plain totally black dull background.
+
+extract only the LED neon sign from the mockup image and provide it in a simple straight view sign with the upper told aspects.   
+
+Remove the cables, connectors or installation marks or anything similar if present in the mockup.
+
+There must be no edges of the sign in any case with any color, the only thing that can have a color is the neon tube and nothing else.
+
+There must not exist any acrylic or glass backer of the sign nor any reflections anywhere on the background.
+
+Some absolute rules for the neon:
+1. The noen tube can never be hollow. It is a strictly compact running tube with totally white color overall.
+2. there can't be any ridgeline for the neon acting as a peripheral boundary of it with a different color. the entire compact neon has ab absolute white 255 color.
+3. The text crafted by using the neon tube is absolutely supposed to be of entirely the same shape ans size no matter how complex.
+4. The black part in the mockup is to be discarded only colored neon will be shown in the output.
+5. Also remove the backer completely and don't even show it's contours or edges. 
+
+The most important and ultimate Physics-Business model alignment(never to be negelected in any case):
+1. The neon tube is 2.4 cm thick glwoing tube which can though bend but not in any clustered or non uniform freeform shape.
+2. It is always of a constant thickness
+3. This is the most expensive material in our sign
+4. The resultant must contain neon tube in least quantity as being much clustered neon tube is prickling to eyes and expensive sa well.
+5. Every seemingly glwoing thing in the mock-up is not neon, it can be UV print as well if a bit dull
+6. Complex colorful faces and objects are most probably UV priting  
+7. UV priting is not to be added to the neon sketch at all.
+
+Additional Instructions: [ ]
+If additional instructions given, never violate it and give absolute prime importance to that even if it goes counter to any of your previsous instructions.

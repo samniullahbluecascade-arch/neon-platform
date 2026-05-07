@@ -1,0 +1,61 @@
+Photorealistic lifestyle photograph. Camera: Sony A7IV, 35mm lens, cinematic depth of field, front-facing eye-level shot only — the sign must be photographed perfectly square-on with zero side angle, zero perspective tilt, and zero rotation. The camera axis is perpendicular to the wall plane. Side-view, angled, or tilted outputs are strictly forbidden.
+
+ENVIRONMENT
+The background is always and always pure black with no other objects in the background at all or lightning or any glow. The sign is mounted flat on the wall, centrally positioned, occupying 25–50% of the visible wall width with clear space on all sides. Power cord hidden. Faint shadow behind the sign backer only.
+
+SIGN CONSTRUCTION — READ THE DESIGN FIRST, THEN APPLY THESE RULES IN ORDER
+
+Step 1 — Classify every element in the uploaded design:
+  A) Simple outlines, borders, geometric frames, simple text → LED neon tube only
+  B) Absolutely black background areas. Do not try to change black color to any other color. 
+  D) Text or shapes where stroke weight visibly varies at joints, curves, or terminals (calligraphic, brush, display, or contrast-serif typefaces) → single-tube construction
+
+Step 2 — Apply the correct construction method per element:
+
+  LED NEON TUBE ELEMENTS (all type-A elements, and the outlines of type-B elements if desired):
+  - Every line is a glowing 12mm silicone LED neon tube only
+  - The backer is clear transparent acrylic. Between every tube line the acrylic surface reads as a flat non-glowing white/off-white — no dark zones, no coloured fill zones anywhere
+  - Illustrations and icon shapes: tube lines trace the outer boundary plus minimum interior detail lines for recognition. No filled interiors, no shading, no solid areas. Dense looping tube lines for food, flame, and liquid motifs, with visible tube structure throughout
+  - Tube colours exactly match the corresponding colour in the uploaded design
+  - Every tube glows; the glow colour exactly matches the tube colour; glow is the only light-emitting element on the sign
+
+  UV-PRINTED ELEMENTS (type-B areas):
+  - On areas on the deisgn with complex shapes, or dense regions or multiple colors, UV is used instead of LED neon tube.
+  - Flat-ink UV print applied directly onto the acrylic surface around the neon tubes
+  - UV print does not glow; it is a non-luminous surface print even dull it must abolutely be quite visible(you can't make it dull black simply)
+  - Use UV print only where neon tube construction cannot represent the element accurately — complex fills, or intricate illustration areas
+  - UV print and neon tubes can coexist on the same sign; label each clearly in your reasoning before generating
+
+Step 3 — Backer:
+  - Clear transparent acrylic backer
+  - Mounting: standoffs or flush mount, power cord hidden
+
+GLOW AND LIGHTING
+Each and every tube glows in its own colour. The glow is the sole light source on the sign. There is zero additional coloured lighting behind or around the sign. A single low-power neutral fill light may be implied to softly reveal prop silhouettes in bokeh; it must not compete with or recolour the sign's glow.
+
+ABSOLUTE CONSTRAINTS — NEVER VIOLATE
+1. Dense, complex, clustered, and intrinsic multiple colored regions are lways to be printed using UV printing with strictly no LED neon tube use at all.
+2. Front view only. Camera perpendicular to wall. No side angle. No tilt. No rotation.
+3. Background is always absolutely black with no glow at all.
+4. No watermarks, no text overlays, no dimension callouts, no labels, no borders, no vignettes added to the image.
+5. No dark or coloured fill zones on the sign backer between tube lines.
+6. UV print elements must be visually distinguishable from neon elements — they do not glow.
+7. Ultra high resolution output. Photograph only.
+8. Always give the mockups view only from the front with no tilting or side view at all in any case.
+9. you can never anything on your own, if there is everything complex in the sign with nothing to be regarded as neon, add some random neon tubes in that complex sign.
+
+ELEMENTS PLACEMENTS MODEL:
+1. You can never change an element's place, size, shape, or colour at all while crafting it with neon tube. It is absolutely mendatory for the mock-up to stay intact for the neon tube crafting part.
+2. There is only one exception that the black color can be converted to white neon tube.
+
+The most important and ultimate Physics-Business model alignment(never to be negelected in any case):
+1. The neon tube is 2.4 cm thick glwoing tube which can though bend but not in any clustered or non uniform freeform shape.
+2. It is always of a constant thickness
+3. This is the most expensive material in our sign
+4. The resultant must contain neon tube in least quantity as being much clustered neon tube is prickling to eyes and expensive sa well.
+5. Every seemingly glwoing thing in the mock-up is not neon, it can be UV print as well if a bit dull
+6. Complex colorful faces and objects are most probably UV priting  
+7. UV priting is not to be added to the neon sketch at all.
+
+Additional Instructions: [ ]
+If additional instructions given, never violate it and give absolute prime importance to that even if it goes counter to any of your previsous instructions.
