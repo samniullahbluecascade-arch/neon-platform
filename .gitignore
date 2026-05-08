@@ -88,6 +88,7 @@ Failing/
 uploads_v8/
 _v8_pipeline_stub/
 v8_app
+neon_prompt_lab/*
 
 # Misc
 *.bak
