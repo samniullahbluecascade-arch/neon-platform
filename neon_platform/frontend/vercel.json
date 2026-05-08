@@ -1,5 +1,8 @@
 {
-  "build": {
-    "outputDirectory": ".next"
-  }
+  "builds": [
+    {
+      "src": "next.config.mjs",
+      "use": "@vercel/next"
+    }
+  ]
 }
