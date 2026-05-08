@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-const TIER_COLORS: Record<string, string> = {
-  free:       '#8a8a9a',
-  starter:    '#0891b2',
-  business:   '#e91e63',
-  enterprise: '#d97706',
+const TIER_COLOR: Record<string, string> = {
+  free:       '#9CA3AF',
+  starter:    '#0891B2',
+  business:   '#E8175D',
+  enterprise: '#D97706',
 };
 
 export default function NavBar() {
@@ -20,13 +20,13 @@ export default function NavBar() {
       <Link
         href={href}
         style={{
-          fontSize: '0.85rem',
+          color: active ? 'var(--text)' : 'var(--text-2)',
           fontWeight: 500,
-          color: active ? 'var(--text)' : 'var(--text-dim)',
-          textDecoration: 'none',
-          transition: 'color 0.15s',
-          paddingBottom: '2px',
+          fontSize: '0.875rem',
+          letterSpacing: '0.01em',
+          paddingBottom: 2,
           borderBottom: active ? '2px solid var(--pink)' : '2px solid transparent',
+          transition: 'color 0.2s',
         }}
       >
         {label}
@@ -35,67 +35,70 @@ export default function NavBar() {
   };
 
   return (
-    <nav style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
-      background: 'rgba(255, 255, 255, 0.88)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid var(--border)',
-      padding: '0 2rem',
-      height: '64px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '1rem',
-    }}>
-      {/* Logo */}
-      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-        <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.6rem', letterSpacing: '0.04em', color: 'var(--text)' }}>
-          Neon
-        </span>
-        <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.6rem', letterSpacing: '0.04em' }} className="neon-pink">
-          izer
-        </span>
-      </Link>
+    <nav
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        background: 'rgba(255,255,255,0.92)',
+        borderBottom: '1px solid var(--border)',
+        boxShadow: '0 1px 0 rgba(0,0,0,0.06)',
+      }}
+    >
+      <div className="wrapper" style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 40,
+        height: 64,
+      }}>
+        <Link href="/" className="nav-logo" style={{ marginRight: 'auto' }}>
+          <span className="logo-dot" />
+          Neonizer
+        </Link>
 
-      {/* Right side */}
-      {user ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-          {link('/dashboard', 'Quick Measure')}
-          {link('/studio', 'Studio')}
-          {link('/pricing', 'Pricing')}
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            {link('/dashboard', 'Quick Measure')}
+            {link('/studio', 'Studio')}
+            {link('/pricing', 'Pricing')}
 
-          {/* Tier badge */}
-          <span style={{
-            fontSize: '0.62rem',
-            fontFamily: 'Space Mono, monospace',
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: TIER_COLORS[user.tier] ?? 'var(--text-muted)',
-            border: `1px solid ${TIER_COLORS[user.tier] ?? 'var(--border-md)'}`,
-            padding: '3px 10px',
-            borderRadius: '999px',
-          }}>
-            {user.tier}
-          </span>
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.62rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: TIER_COLOR[user.tier] ?? 'var(--text-3)',
+              border: `1px solid ${TIER_COLOR[user.tier] ?? 'var(--border-2)'}`,
+              padding: '3px 10px',
+              borderRadius: 999,
+            }}>
+              {user.tier}
+            </span>
 
-          {link('/profile', user.email.split('@')[0])}
+            {link('/profile', user.email.split('@')[0])}
 
-          <button className="btn-ghost" onClick={logout} style={{ padding: '0.4rem 0.9rem', fontSize: '0.78rem' }}>
-            Sign out
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <Link href="/pricing" style={{ color: 'var(--text-dim)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: 500 }}>
-            Pricing
-          </Link>
-          <Link href="/login"><button className="btn-ghost" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}>Log in</button></Link>
-          <Link href="/register"><button className="btn-neon" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }}>Start free</button></Link>
-        </div>
-      )}
+            <button
+              onClick={logout}
+              className="btn-secondary"
+              style={{ padding: '7px 14px', fontSize: '0.78rem' }}
+            >
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+            <Link href="/studio" style={{ color: path === '/studio' ? 'var(--text)' : 'var(--text-2)', fontWeight: 500, fontSize: '0.875rem' }}>Studio</Link>
+            <Link href="/pricing" style={{ color: path === '/pricing' ? 'var(--text)' : 'var(--text-2)', fontWeight: 500, fontSize: '0.875rem' }}>Pricing</Link>
+            <Link href="/login" style={{ color: 'var(--text-2)', fontWeight: 500, fontSize: '0.875rem' }}>Login</Link>
+            <Link href="/register">
+              <button className="nav-cta">Start free →</button>
+            </Link>
+          </div>
+        )}
+      </div>
     </nav>
   );
 }

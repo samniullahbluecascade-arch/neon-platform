@@ -1,686 +1,895 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import NavBar from '@/components/NavBar';
 
-type Sample = {
-  name: string;
-  color: 'pink' | 'cyan' | 'green' | 'amber';
-  length: number;
-  tier: 'GLASS-CUT' | 'QUOTE' | 'ESTIMATE';
-  svg: React.ReactNode;
-};
+type Tab = 'mockup' | 'sketch' | 'quote';
 
-const SAMPLES: Sample[] = [
-  {
-    name: 'OPEN', color: 'pink', length: 2.34, tier: 'GLASS-CUT',
-    svg: (
-      <svg viewBox="0 0 320 120" style={{ width: '70%', maxHeight: '78%' }}>
-        <path className="tube-glow tube-draw" d="M 30 30 Q 15 30 15 60 Q 15 90 30 90 Q 60 90 60 60 Q 60 30 30 30 Z" />
-        <path className="tube-glow tube-draw" d="M 80 90 L 80 30 L 105 30 Q 120 30 120 45 Q 120 60 105 60 L 80 60" />
-        <path className="tube-glow tube-draw" d="M 175 30 L 140 30 L 140 90 L 175 90 M 140 60 L 170 60" />
-        <path className="tube-glow tube-draw" d="M 195 90 L 195 30 L 235 90 L 235 30" />
-      </svg>
-    ),
-  },
-  {
-    name: 'COFFEE', color: 'amber', length: 3.12, tier: 'GLASS-CUT',
-    svg: (
-      <svg viewBox="0 0 280 160" style={{ width: '60%', maxHeight: '80%' }}>
-        <path className="tube-glow amber tube-draw" d="M 60 70 L 60 130 Q 60 140 70 140 L 150 140 Q 160 140 160 130 L 160 70 Z" />
-        <path className="tube-glow amber tube-draw" d="M 160 85 Q 195 85 195 110 Q 195 130 160 130" />
-        <path className="tube-glow amber tube-draw" d="M 85 60 Q 75 45 85 30 Q 95 15 85 0" />
-        <path className="tube-glow amber tube-draw" d="M 110 60 Q 100 45 110 30 Q 120 15 110 0" />
-        <path className="tube-glow amber tube-draw" d="M 135 60 Q 125 45 135 30 Q 145 15 135 0" />
-      </svg>
-    ),
-  },
-  {
-    name: 'HEART', color: 'pink', length: 1.85, tier: 'GLASS-CUT',
-    svg: (
-      <svg viewBox="0 0 200 180" style={{ width: '60%', maxHeight: '80%' }}>
-        <path className="tube-glow tube-draw" d="M 100 160 L 30 90 Q 5 65 30 40 Q 55 15 80 40 L 100 60 L 120 40 Q 145 15 170 40 Q 195 65 170 90 Z" />
-      </svg>
-    ),
-  },
-  {
-    name: 'BOLT', color: 'cyan', length: 1.42, tier: 'QUOTE',
-    svg: (
-      <svg viewBox="0 0 160 200" style={{ width: '50%', maxHeight: '85%' }}>
-        <path className="tube-glow cyan tube-draw" d="M 100 10 L 30 110 L 75 110 L 60 190 L 130 80 L 90 80 Z" />
-      </svg>
-    ),
-  },
+type Sample = { word: string; color: string; glow: string };
+const SIGN_OPTIONS: Sample[] = [
+  { word: 'OPEN',    color: '#FF1464', glow: '255,20,100' },
+  { word: 'COFFEE',  color: '#FFB400', glow: '255,180,0' },
+  { word: 'LOVE ♡',  color: '#FF1464', glow: '255,20,100' },
+  { word: 'BAR',     color: '#00E5C8', glow: '0,229,200' },
+  { word: 'BOLT ⚡', color: '#FFB400', glow: '255,180,0' },
+];
+
+const COLOR_OPTIONS = [
+  { hex: '#E8175D', glow: '232,23,93',  name: 'Hot Pink' },
+  { hex: '#FF4500', glow: '255,69,0',   name: 'Red Orange' },
+  { hex: '#D97706', glow: '217,119,6',  name: 'Warm Amber' },
+  { hex: '#0891B2', glow: '8,145,178',  name: 'Neon Cyan' },
+  { hex: '#16A34A', glow: '22,163,74',  name: 'Electric Green' },
+  { hex: '#7C3AED', glow: '124,58,237', name: 'Ultra Violet' },
+  { hex: '#111827', glow: '17,24,39',   name: 'Pure White' },
+  { hex: '#DB2777', glow: '219,39,119', name: 'Soft Pink' },
 ];
 
 export default function LandingPage() {
-  const [activeIdx, setActiveIdx] = useState(1);
-  const [widthIn, setWidthIn] = useState(24);
+  // Hero (small) frame state
+  const [smTab, setSmTab]                 = useState<Tab>('mockup');
+  const [smColor, setSmColor]             = useState(COLOR_OPTIONS[0]);
+  const [smWidth, setSmWidth]             = useState('');
+  const [smBgName, setSmBgName]           = useState('');
+  const [smUv, setSmUv]                   = useState(false);
 
-  const sample = SAMPLES[activeIdx];
-  const measuredM = useMemo(() => sample.length * (widthIn / 24), [sample.length, widthIn]);
-  const price = Math.max(25, Math.round(measuredM * 10 * 1.4));
-  const tierColor = sample.tier === 'GLASS-CUT' ? 'var(--green)' : sample.tier === 'QUOTE' ? 'var(--cyan)' : 'var(--amber)';
+  // Demo (big) section state
+  const [bigTab, setBigTab]               = useState<Tab>('mockup');
+  const [bigColor, setBigColor]           = useState(COLOR_OPTIONS[0]);
+  const [bigWidth, setBigWidth]           = useState('');
+  const [bigBg, setBigBg]                 = useState<File | null>(null);
+  const [bigUv, setBigUv]                 = useState(false);
+  const [bigUvPart, setBigUvPart]         = useState('');
+  const [bigSign, setBigSign]             = useState<Sample>(SIGN_OPTIONS[0]);
+
+  // Scroll-reveal observer
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') return;
+    const els = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver(
+      entries => {
+        entries.forEach(en => {
+          if (en.isIntersecting) {
+            en.target.classList.add('in');
+            obs.unobserve(en.target);
+          }
+        });
+      },
+      { threshold: 0.18, rootMargin: '0px 0px -10% 0px' }
+    );
+    els.forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div>
       <NavBar />
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section style={{
-        padding: '4rem 2rem 5rem',
-        position: 'relative',
-        overflow: 'hidden',
-        background:
-          'radial-gradient(ellipse 800px 500px at 0% 0%, var(--pink-soft) 0%, transparent 55%),' +
-          'radial-gradient(ellipse 600px 400px at 100% 30%, var(--cyan-soft) 0%, transparent 55%)',
-      }}>
-        <div style={{
-          maxWidth: '1240px', margin: '0 auto',
-          display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: '4rem', alignItems: 'center',
-        }} className="hero-grid">
+      {/* ───────── HERO ───────── */}
+      <section>
+        <div className="wrapper hero">
+          <div className="hero-left">
+            <div className="hero-badge">
+              <span className="badge-dot" />
+              Live measurement engine
+            </div>
 
-          <div className="fade-up">
-            <div className="pill" style={{ marginBottom: '1.5rem' }}>Live measurement engine</div>
-            <h1 style={{
-              fontFamily: 'Bebas Neue, sans-serif',
-              fontSize: 'clamp(2.6rem, 5.5vw, 4.6rem)',
-              letterSpacing: '0.02em',
-              lineHeight: 1.02,
-              marginBottom: '1.25rem',
-            }}>
-              Quote any neon sign<br />
-              in <span className="neon-pink">60 seconds.</span>
+            <h1 className="hero-headline">
+              Turn any artwork into<br />
+              a <span className="accent">neon sign quote</span><br />
+              in 60 seconds.
             </h1>
-            <p style={{
-              color: 'var(--text-dim)',
-              fontSize: '1.1rem',
-              lineHeight: 1.6,
-              marginBottom: '2rem',
-              maxWidth: '540px',
-            }}>
-              Drop in a logo, mockup, or sketch. Neonizer measures every tube down to the bend, then
-              prices it for you. Stop tracing, stop emailing leads back and forth — just quote and bend.
+
+            <p className="hero-sub">
+              Drop in a logo, sketch, or mockup. Neonizer&rsquo;s AI traces every tube,
+              counts every bend, and builds a production quote — automatically.
+              No back-and-forth. No guesswork.
             </p>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
-              <Link href="/register">
-                <button className="btn-neon" style={{ padding: '0.95rem 1.8rem', fontSize: '0.95rem' }}>
-                  Start for free →
-                </button>
-              </Link>
-              <Link href="/dashboard">
-                <button className="btn-ghost" style={{ padding: '0.9rem 1.7rem', fontSize: '0.9rem' }}>
-                  Watch a demo
+
+            <div className="hero-actions">
+              <Link href="/register"><button className="btn-primary">Start for free →</button></Link>
+              <Link href="/studio">
+                <button className="btn-secondary">
+                  <span className="play-icon">▶</span>
+                  Watch demo
                 </button>
               </Link>
             </div>
-            <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.78rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span><span style={{ color: 'var(--green)' }}>●</span> No credit card</span>
-              <span><span style={{ color: 'var(--green)' }}>●</span> 20 free measurements / month</span>
-              <span><span style={{ color: 'var(--green)' }}>●</span> Cancel anytime</span>
+
+            <div className="trust-chips">
+              <div className="trust-chip">
+                <CheckIcon />
+                No credit card
+              </div>
+              <div className="trust-chip">
+                <CheckIcon />
+                20 free quotes / month
+              </div>
+              <div className="trust-chip">
+                <CheckIcon />
+                Cancel anytime
+              </div>
             </div>
           </div>
 
-          {/* Live demo panel */}
-          <div className="fade-up-2" style={{
-            background: '#fff',
-            border: '1px solid var(--border)',
-            borderRadius: '18px',
-            boxShadow: 'var(--shadow-xl)',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: '0.75rem 1.1rem',
-              borderBottom: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: 'var(--bg-1)',
-            }}>
-              <div style={{ display: 'flex', gap: '5px' }}>
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#ff5f57' }} />
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#ffbd2e' }} />
-                <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#28c840' }} />
-              </div>
-              <div style={{
-                fontFamily: 'Space Mono, monospace', fontSize: '0.65rem',
-                letterSpacing: '0.18em', color: 'var(--text-muted)', textTransform: 'uppercase',
-              }}>neonizer.app / measure</div>
-              <div style={{ width: 42 }} />
+          {/* App Preview Frame */}
+          <div className="app-frame">
+            <div className="frame-bar">
+              <div className="dot-r" /><div className="dot-y" /><div className="dot-g" />
+              <div className="frame-url">neonizer.app / studio</div>
             </div>
+            <div className="frame-body">
+              {/* Input panel */}
+              <div className="frame-input">
+                <div className="upload-zone">
+                  <div className="upload-icon-wrap">↑</div>
+                  <p>Drop your design</p>
+                  <span>PNG · JPG · SVG · CDR</span>
+                </div>
+                <div className="instruction-box-frame">
+                  <div className="instr-header">
+                    <span className="instr-badge">AI Instructions</span>
+                    <span className="ai-dot" />
+                  </div>
+                  <textarea className="instr-textarea" placeholder="e.g. Outdoor, warm white, wall-mounted..." />
 
-            <div className="dark-screen" key={activeIdx} style={{
-              aspectRatio: '5 / 3',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: 0,
-            }}>
-              {sample.svg}
-            </div>
+                  {/* Color + Width + BG */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.8fr 1fr', gap: 5, marginBottom: 7 }}>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{
+                        position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)',
+                        width: 10, height: 10, borderRadius: '50%',
+                        background: smColor.hex,
+                        boxShadow: `0 0 5px rgba(${smColor.glow},0.8)`,
+                        pointerEvents: 'none',
+                      }} />
+                      <select
+                        value={smColor.hex}
+                        onChange={e => {
+                          const c = COLOR_OPTIONS.find(c => c.hex === e.target.value);
+                          if (c) setSmColor(c);
+                        }}
+                        style={{
+                          width: '100%', appearance: 'none', WebkitAppearance: 'none',
+                          background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border-2)',
+                          borderRadius: 6, padding: '5px 18px 5px 22px',
+                          color: 'var(--text)', fontFamily: 'var(--font-body)',
+                          fontSize: '0.6rem', fontWeight: 500, outline: 'none', cursor: 'pointer',
+                        }}>
+                        {COLOR_OPTIONS.slice(0, 7).map(c => (
+                          <option key={c.hex} value={c.hex}>{c.name}</option>
+                        ))}
+                      </select>
+                      <span style={{
+                        position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                        fontSize: '0.45rem', color: 'var(--text-3)', pointerEvents: 'none',
+                      }}>▼</span>
+                    </div>
 
-            <div style={{
-              padding: '1rem 1.1rem',
-              display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem',
-              borderBottom: '1px solid var(--border)',
-            }}>
-              <Stat label="Tube length" value={measuredM.toFixed(2)} unit="m" />
-              <Stat label="Breakeven" value={`$${price.toFixed(2)}`} valueColor="var(--green)" />
-              <Stat label="Quality tier" value={sample.tier} valueColor={tierColor} small />
-            </div>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" placeholder="24" min={1} max={240}
+                        value={smWidth}
+                        onChange={e => setSmWidth(e.target.value)}
+                        style={{
+                          width: '100%',
+                          background: 'rgba(0,0,0,0.03)',
+                          border: '1px solid var(--border-2)',
+                          borderRadius: 6, padding: '5px 22px 5px 8px',
+                          color: 'var(--text)', fontFamily: 'var(--font-mono)',
+                          fontSize: '0.62rem', fontWeight: 500, outline: 'none',
+                          MozAppearance: 'textfield' as React.CSSProperties['MozAppearance'],
+                          fontVariantNumeric: 'tabular-nums',
+                        }} />
+                      <span style={{
+                        position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                        fontSize: '0.52rem', fontWeight: 600, color: 'var(--text-3)',
+                        pointerEvents: 'none', fontFamily: 'var(--font-mono)',
+                      }}>in</span>
+                    </div>
 
-            <div style={{ padding: '0.95rem 1.1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-              <div>
-                <div style={demoCtrlLabel}>Try a sample</div>
-                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.45rem' }}>
-                  {SAMPLES.map((s, i) => (
-                    <button
-                      key={s.name}
-                      onClick={() => setActiveIdx(i)}
-                      style={{
-                        flex: 1,
-                        padding: '0.55rem',
-                        background: i === activeIdx ? 'var(--pink-soft)' : '#fff',
-                        border: `1px solid ${i === activeIdx ? 'var(--pink)' : 'var(--border)'}`,
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        fontSize: '0.72rem',
-                        fontWeight: 600,
-                        color: i === activeIdx ? 'var(--pink-deep)' : 'var(--text-dim)',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {s.name}
-                    </button>
-                  ))}
+                    <label style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
+                      <input type="file" accept="image/*"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f) setSmBgName(f.name.length > 12 ? f.name.slice(0, 10) + '…' : f.name);
+                        }}
+                        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 2 }} />
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        background: 'rgba(0,0,0,0.02)',
+                        border: `1px dashed ${smBgName ? 'rgba(0,229,200,0.4)' : 'var(--border-2)'}`,
+                        borderRadius: 6, padding: '5px 8px',
+                        transition: 'all 0.2s',
+                      }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--cyan)' }}>🖼</span>
+                        <span style={{
+                          fontSize: '0.6rem',
+                          color: smBgName ? 'var(--cyan)' : 'var(--text-3)',
+                          fontWeight: 500,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
+                          {smBgName || 'Background'}
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* UV checkbox */}
+                  <div onClick={() => setSmUv(!smUv)} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 7,
+                    padding: '7px 9px',
+                    background: smUv ? 'var(--amber-dim)' : 'rgba(0,0,0,0.02)',
+                    border: `1px solid ${smUv ? 'rgba(255,180,0,0.4)' : 'var(--border-2)'}`,
+                    borderRadius: 6, cursor: 'pointer', marginBottom: 7,
+                    transition: 'all 0.2s',
+                  }}>
+                    <div style={{
+                      width: 13, height: 13, borderRadius: 3,
+                      border: `1.5px solid ${smUv ? 'var(--amber)' : 'var(--border-2)'}`,
+                      background: smUv ? 'var(--amber)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, marginTop: 1,
+                      boxShadow: smUv ? '0 0 8px rgba(255,180,0,0.4)' : 'none',
+                      transition: 'all 0.18s',
+                    }}>
+                      {smUv && <span style={{ fontSize: '0.5rem', fontWeight: 900, color: '#000', lineHeight: 1 }}>✓</span>}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.62rem', fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, marginBottom: 1 }}>
+                        UV Printed Part
+                      </div>
+                      <div style={{ fontSize: '0.56rem', color: 'var(--text-3)', lineHeight: 1.3 }}>
+                        Sign includes a UV-printed component
+                      </div>
+                    </div>
+                  </div>
+
+                  {smUv && (
+                    <div style={{ marginBottom: 7 }}>
+                      <textarea
+                        placeholder="Which part? e.g. acrylic backboard…"
+                        style={{
+                          width: '100%',
+                          background: 'rgba(255,180,0,0.04)',
+                          border: '1px solid rgba(255,180,0,0.25)',
+                          borderRadius: 6, padding: '6px 8px',
+                          color: 'var(--text)', fontFamily: 'var(--font-body)',
+                          fontSize: '0.62rem', resize: 'none', height: 38, outline: 'none',
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <button className="gen-btn">Generate →</button>
                 </div>
               </div>
+
+              {/* Output panel */}
+              <div className="frame-output">
+                <div className="output-tabs-sm">
+                  <button className={`tab-sm ${smTab === 'mockup' ? 'active' : ''}`} onClick={() => setSmTab('mockup')}>Mockup</button>
+                  <button className={`tab-sm ${smTab === 'sketch' ? 'active' : ''}`} onClick={() => setSmTab('sketch')}>Sketch</button>
+                  <button className={`tab-sm ${smTab === 'quote' ? 'active' : ''}`}  onClick={() => setSmTab('quote')}>Quote</button>
+                </div>
+
+                {smTab === 'mockup' && (
+                  <>
+                    <div className="neon-preview-box">
+                      <span className="neon-sign-text">OPEN</span>
+                    </div>
+                    <div className="output-meta-sm">
+                      <div className="meta-pill"><span className="label">Tube length</span><span className="value">3.12 m</span></div>
+                      <div className="meta-pill highlight"><span className="label">Quote</span><span className="value">$184.50</span></div>
+                      <div className="meta-pill"><span className="label">Tolerance</span><span className="value">±4.8%</span></div>
+                      <div className="meta-pill"><span className="label">Tier</span><span className="value">GLASS-CUT</span></div>
+                    </div>
+                  </>
+                )}
+
+                {smTab === 'sketch' && (
+                  <>
+                    <div className="neon-preview-box" style={{ background: '#050505' }}>
+                      <SmallSketchSvg />
+                    </div>
+                    <div className="output-meta-sm">
+                      <div className="meta-pill"><span className="label">Paths traced</span><span className="value">14</span></div>
+                      <div className="meta-pill"><span className="label">Bends</span><span className="value">22</span></div>
+                    </div>
+                  </>
+                )}
+
+                {smTab === 'quote' && (
+                  <div style={{ padding: 12, fontSize: '0.72rem' }}>
+                    <QRow label="Tube length" value="3.12 m" />
+                    <QRow label="Cost / metre" value="$42.00" />
+                    <QRow label="Markup" value="40%" />
+                    <QRow label="Total quote" value="$184.50" total />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── STATS BAR ───────── */}
+      <div className="stats-bar reveal">
+        <div className="wrapper">
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="stat-value">12<span>,</span>400<span>+</span></div>
+              <div className="stat-label">Signs measured</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">≤<span>5</span>%</div>
+              <div className="stat-label">Cutting tolerance</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">&lt;<span>5</span>s</div>
+              <div className="stat-label">Per measurement</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">120<span>+</span></div>
+              <div className="stat-label">Sign manufacturers</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">$1<span>.</span>2<span>M</span></div>
+              <div className="stat-label">In quotes generated</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ───────── 3-STAGE VISUAL ───────── */}
+      <section className="section">
+        <div className="wrapper">
+          <div className="stages-header reveal">
+            <div className="section-tag">From artwork to production</div>
+            <h2 className="section-title">Three stages, one upload.</h2>
+            <p className="section-sub">
+              Watch your customer&rsquo;s logo become a photoreal mockup, then a precise tube sketch,
+              then a ready-to-send quote.
+            </p>
+          </div>
+
+          <div className="stages-grid">
+            <div className="stage-card reveal" data-delay="1">
+              <div className="stage-visual" style={{ flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: '2.5rem' }}>🖼</span>
+                <span style={{
+                  fontSize: '0.7rem', fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-3)', letterSpacing: '0.05em',
+                }}>customer_logo.png</span>
+              </div>
+              <div className="stage-body">
+                <div className="stage-num">01 — SOURCE</div>
+                <div className="title">Customer artwork</div>
+                <p>Whatever they sent — JPG, PNG, SVG, or CDR. Neonizer detects the format automatically.</p>
+              </div>
+            </div>
+
+            <div className="stage-card reveal" data-delay="2">
+              <div className="stage-visual neon-bg">OPEN</div>
+              <div className="stage-body">
+                <div className="stage-num">02 — MOCKUP</div>
+                <div className="title">Photoreal neon render</div>
+                <p>AI shows exactly how the finished sign will glow — the exact image your customer signs off on.</p>
+              </div>
+            </div>
+
+            <div className="stage-card reveal" data-delay="3">
+              <div className="stage-visual sketch-bg">
+                <div className="sketch-lines">
+                  <Stage3SketchSvg />
+                </div>
+              </div>
+              <div className="stage-body">
+                <div className="stage-num">03 — MEASURED</div>
+                <div className="title">Cut-ready geometry</div>
+                <p>Every path traced, every bend counted, total length confirmed. Send straight to your bender.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── DEMO / TOOLBOX ───────── */}
+      <section className="demo-section">
+        <div className="wrapper">
+          <div className="reveal" style={{ marginBottom: 56 }}>
+            <div className="section-tag">The studio</div>
+            <h2 className="section-title">Upload. Instruct. Generate.</h2>
+            <p className="section-sub">
+              The instruction toolbox is your control room. Tell the AI exactly what you need —
+              mounting style, glow color, weatherproofing, size — and it adapts the output.
+            </p>
+          </div>
+
+          <div className="demo-layout">
+            {/* LEFT — Upload + Instruction toolbox */}
+            <div className="big-input-panel reveal" data-delay="1">
               <div>
-                <div style={demoCtrlLabel}>Sign width</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginTop: '0.45rem' }}>
-                  <input
-                    type="range" min={12} max={48} value={widthIn}
-                    onChange={e => setWidthIn(parseInt(e.target.value))}
-                    style={{ flex: 1, accentColor: 'var(--pink)' }}
-                  />
-                  <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '0.85rem', fontWeight: 700, minWidth: 60, textAlign: 'right' }}>
-                    {widthIn} in
+                <div className="panel-label">1. Upload your artwork</div>
+                <div className="big-upload">
+                  <div className="big-upload-icon">↑</div>
+                  <h4>Drop your sign design here</h4>
+                  <p>Or click to browse your files</p>
+                  <div className="format-chips">
+                    <span className="fmt">PNG</span>
+                    <span className="fmt">JPG</span>
+                    <span className="fmt">SVG</span>
+                    <span className="fmt">CDR</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="panel-label">2. Set your instructions</div>
+                <div className="big-instr-box">
+                  <div className="big-instr-header">
+                    <div className="instr-title">
+                      <span>AI Instruction Toolbox</span>
+                      <span className="badge">Active</span>
+                    </div>
+                    <div className="ai-status">
+                      <span className="status-dot" />
+                      Ready
+                    </div>
+                  </div>
+
+                  <div className="big-instr-body">
+                    <textarea
+                      className="big-instr-textarea"
+                      placeholder="Describe any custom requirements… e.g. 'Make it suitable for outdoor use, warm white glow, approximately 36 inches wide, wall-mounted with a black acrylic backboard.'"
+                    />
+
+                    <div className="toolbox-row">
+                      <div className="toolbox-field">
+                        <label>Neon Color</label>
+                        <div className="color-select-wrap">
+                          <span className="color-swatch" style={{
+                            background: bigColor.hex,
+                            boxShadow: `0 0 8px rgba(${bigColor.glow},0.7)`,
+                          }} />
+                          <select
+                            className="color-select"
+                            value={bigColor.hex}
+                            onChange={e => {
+                              const c = COLOR_OPTIONS.find(c => c.hex === e.target.value);
+                              if (c) setBigColor(c);
+                            }}
+                          >
+                            {COLOR_OPTIONS.map(c => <option key={c.hex} value={c.hex}>{c.name}</option>)}
+                          </select>
+                          <span className="select-arrow">▼</span>
+                        </div>
+                      </div>
+
+                      <div className="toolbox-field">
+                        <label>Width (inches)</label>
+                        <div className="width-input-wrap">
+                          <input
+                            type="number" min={1} max={240} placeholder="24"
+                            className="width-input"
+                            value={bigWidth}
+                            onChange={e => setBigWidth(e.target.value)}
+                          />
+                          <span className="width-unit">in</span>
+                        </div>
+                      </div>
+
+                      <div className="toolbox-field">
+                        <label>Background Image</label>
+                        <div className="bg-upload-zone" style={{
+                          borderColor: bigBg ? 'rgba(0,229,200,0.4)' : undefined,
+                        }}>
+                          <input
+                            type="file" accept="image/*"
+                            onChange={e => setBigBg(e.target.files?.[0] ?? null)}
+                          />
+                          <div className="bg-upload-icon">🖼</div>
+                          <div className="bg-upload-text">
+                            <p>{bigBg ? 'Background set ✓' : 'Upload background'}</p>
+                            <span>PNG · JPG · WEBP</span>
+                          </div>
+                        </div>
+                        {bigBg && (
+                          <div className="bg-file-name visible">
+                            <span>✓</span>
+                            <span>{bigBg.name.length > 22 ? bigBg.name.slice(0, 20) + '…' : bigBg.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* UV Coating */}
+                    <div
+                      className={`uv-checkbox-wrap ${bigUv ? 'checked' : ''}`}
+                      onClick={() => setBigUv(!bigUv)}
+                    >
+                      <div className="uv-checkbox">
+                        <span className="uv-check-icon">✓</span>
+                      </div>
+                      <div className="uv-label-wrap">
+                        <strong>
+                          Includes UV Printed Part <span className="uv-badge">UV PRINT</span>
+                        </strong>
+                        <p>The sign includes a UV-printed component (e.g. printed acrylic backing, printed panel, or graphic insert). The AI will account for this part in the mockup and quote.</p>
+                      </div>
+                    </div>
+
+                    <div className={`uv-part-field ${bigUv ? 'visible' : ''}`}>
+                      <label className="toolbox-field" style={{ gap: 6, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--amber)' }}>
+                          Which part is UV printed?
+                        </span>
+                        <div style={{ position: 'relative' }}>
+                          <textarea
+                            value={bigUvPart}
+                            onChange={e => setBigUvPart(e.target.value)}
+                            placeholder="e.g. Acrylic backboard, front panel graphic, logo insert…"
+                            style={{
+                              height: 60,
+                              background: 'rgba(255,180,0,0.04)',
+                              border: '1px solid rgba(255,180,0,0.25)',
+                              borderRadius: 8,
+                              padding: '10px 12px',
+                              margin: 0,
+                              resize: 'none',
+                              width: '100%',
+                              color: 'var(--text)',
+                              fontFamily: 'var(--font-body)',
+                              fontSize: '0.82rem',
+                              outline: 'none',
+                            }}
+                          />
+                        </div>
+                      </label>
+                    </div>
+
+                    <button className="big-gen-btn">
+                      <span>✦</span> Generate mockup, sketch &amp; quote
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── SOCIAL PROOF ─────────────────────────────────────────────────── */}
-      <div style={{
-        borderTop: '1px solid var(--border)',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg-1)',
-        padding: '1.5rem 2rem',
-      }}>
-        <div style={{
-          maxWidth: '1100px', margin: '0 auto',
-          display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '2rem', alignItems: 'center',
-        }}>
-          {[
-            ['12,400+', 'Signs measured'],
-            ['≤5%', 'Cutting tolerance'],
-            ['<5s', 'Per measurement'],
-            ['120+', 'Sign manufacturers'],
-            ['$1.2M', 'In quotes generated'],
-          ].map(([v, l]) => (
-            <div key={l} style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '2rem', color: 'var(--pink)', letterSpacing: '0.03em', lineHeight: 1 }}>{v}</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: '0.4rem' }}>{l}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── BEFORE / DURING / AFTER ──────────────────────────────────────── */}
-      <section style={sectionStyle}>
-        <div style={containerStyle}>
-          <SectionHead
-            eyebrow="From sketch to quote"
-            title={<>See <span className="neon-pink">how it transforms</span> your artwork</>}
-            sub="Three stages, one upload. Watch your customer's logo turn into a photoreal mockup, then a clean tube sketch, then a measured cutting plan."
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }} className="ba-grid">
-            {/* 1. Source */}
-            <BACard step="01 — Source" title="Customer artwork" desc="Whatever they sent you — JPG, PNG, SVG, or CDR.">
-              <div style={{ ...baScreen, background: '#fff', backgroundImage: 'none' }}>
-                <svg viewBox="0 0 200 150" style={{ width: '80%' }}>
-                  <text x="100" y="85" textAnchor="middle" fontFamily="Bebas Neue" fontSize="42" fill="#0a0a14" letterSpacing="2">OPEN</text>
-                  <text x="100" y="115" textAnchor="middle" fontFamily="DM Sans" fontSize="11" fill="#8a8a9a">customer logo.png</text>
-                </svg>
-              </div>
-            </BACard>
-
-            {/* 2. Mockup */}
-            <BACard step="02 — Mockup" title="Photoreal neon render" desc="AI shows exactly how the finished sign will glow.">
-              <div className="dark-screen" style={baScreenInner}>
-                <svg viewBox="0 0 200 150" style={{ width: '85%' }}>
-                  <path className="tube-glow" strokeWidth={5} d="M 30 50 Q 30 35 45 35 L 65 35 Q 80 35 80 50 L 80 90 Q 80 105 65 105 L 45 105 Q 30 105 30 90 Z" />
-                  <path className="tube-glow" strokeWidth={5} d="M 95 35 L 95 105 M 95 35 L 130 105 M 130 35 L 130 105" />
-                  <path className="tube-glow" strokeWidth={5} d="M 145 50 Q 145 35 160 35 L 175 35 Q 180 35 180 40 L 180 50 Q 180 60 170 60 L 155 60 Q 145 60 145 70 L 145 100 Q 145 105 150 105 L 175 105" />
-                </svg>
-              </div>
-            </BACard>
-
-            {/* 3. Measured */}
-            <BACard step="03 — Measured" title="Cut-ready geometry" desc="Every path traced, every bend counted, length confirmed.">
-              <div className="dark-screen" style={baScreenInner}>
-                <svg viewBox="0 0 200 150" style={{ width: '85%' }}>
-                  <path className="tube-glow" strokeWidth={5} strokeOpacity={0.4} d="M 30 50 Q 30 35 45 35 L 65 35 Q 80 35 80 50 L 80 90 Q 80 105 65 105 L 45 105 Q 30 105 30 90 Z" />
-                  <path className="tube-glow" strokeWidth={5} strokeOpacity={0.4} d="M 95 35 L 95 105 M 95 35 L 130 105 M 130 35 L 130 105" />
-                  <path className="tube-glow" strokeWidth={5} strokeOpacity={0.4} d="M 145 50 Q 145 35 160 35 L 175 35 Q 180 35 180 40 L 180 50 Q 180 60 170 60 L 155 60 Q 145 60 145 70 L 145 100 Q 145 105 150 105 L 175 105" />
-                  <path d="M 30 50 Q 30 35 45 35 L 65 35 Q 80 35 80 50 L 80 90 Q 80 105 65 105 L 45 105 Q 30 105 30 90 Z" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M 95 35 L 95 105 M 95 35 L 130 105 M 130 35 L 130 105" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M 145 50 Q 145 35 160 35 L 175 35 Q 180 35 180 40 L 180 50 Q 180 60 170 60 L 155 60 Q 145 60 145 70 L 145 100 Q 145 105 150 105 L 175 105" fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="30" cy="50" r="2.5" fill="var(--pink)" />
-                  <circle cx="80" cy="90" r="2.5" fill="var(--pink)" />
-                  <circle cx="95" cy="35" r="2.5" fill="var(--pink)" />
-                  <circle cx="130" cy="105" r="2.5" fill="var(--pink)" />
-                  <circle cx="145" cy="50" r="2.5" fill="var(--pink)" />
-                  <circle cx="175" cy="105" r="2.5" fill="var(--pink)" />
-                  <line x1="20" y1="125" x2="180" y2="125" stroke="rgba(255,255,255,0.5)" strokeWidth={2} strokeDasharray="4 4" strokeLinecap="round" />
-                  <text x="100" y="140" textAnchor="middle" fontFamily="Space Mono" fontSize="9" fill="#fff">2.34 m  ·  ±5%  ·  GLASS-CUT</text>
-                </svg>
-              </div>
-            </BACard>
-          </div>
-        </div>
-      </section>
-
-      {/* ── BENTO GRID ───────────────────────────────────────────────────── */}
-      <section style={{ ...sectionStyle, background: 'var(--bg-1)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
-        <div style={containerStyle}>
-          <SectionHead
-            eyebrow="Built for neon shops"
-            title={<>Everything you need to <span className="neon-pink">price &amp; produce</span></>}
-            sub="Neonizer isn't a single tool — it's a workshop. Mockup generation, tube extraction, breakeven pricing, and an API to wire it into your stack."
-          />
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(6, 1fr)',
-            gridAutoRows: 'minmax(180px, auto)',
-            gap: '1rem',
-          }} className="bento-grid">
-            {/* Big AI mockup tile */}
-            <BentoCell span={3} rowSpan>
-              <BentoEyebrow>AI Mockup</BentoEyebrow>
-              <div style={{ ...bentoTitle, fontSize: '2rem' }}>From flat logo<br />to glowing neon.</div>
-              <div style={bentoDesc}>Drop in a flat brand logo and Neonizer renders a photoreal LED neon mockup — the exact look your customer is signing off on.</div>
-              <div className="dark-screen" style={bentoVisual}>
-                <svg viewBox="0 0 200 120" style={{ width: '70%' }}>
-                  <path className="tube-glow" strokeWidth={6} d="M 25 70 Q 25 45 45 45 L 75 45 Q 95 45 95 65 L 95 85 Q 95 95 85 95 L 35 95 Q 25 95 25 85 Z" />
-                  <path className="tube-glow" strokeWidth={6} d="M 110 45 L 110 95 M 110 45 L 145 95 M 145 45 L 145 95" />
-                  <path className="tube-glow" strokeWidth={6} d="M 160 95 L 160 65 Q 160 45 175 45" />
-                </svg>
-              </div>
-            </BentoCell>
-
-            {/* Tube extraction */}
-            <BentoCell span={3}>
-              <BentoEyebrow>Tube extraction</BentoEyebrow>
-              <div style={bentoTitle}>Black-and-white sketch in one pass.</div>
-              <div style={bentoDesc}>Centerlines pulled straight from your mockup. Send it to your bender as-is.</div>
-              <div style={{ ...bentoVisual, background: '#fff', backgroundImage: 'none' }}>
-                <svg viewBox="0 0 200 60" style={{ width: '70%' }}>
-                  <path d="M 15 30 Q 15 15 30 15 L 60 15 M 75 15 L 75 45 M 75 15 L 105 45 M 105 15 L 105 45 M 120 15 L 150 15 Q 165 15 165 30 Q 165 45 150 45 L 120 45" fill="none" stroke="#0a0a14" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-            </BentoCell>
-
-            {/* Breakeven pricing */}
-            <BentoCell span={3}>
-              <BentoEyebrow>Breakeven pricing</BentoEyebrow>
-              <div style={bentoTitle}>Know your margin before you quote.</div>
-              <div style={bentoDesc}>Tube length × your cost per metre × your markup. Set it once, every quote uses it.</div>
-              <div style={{
-                marginTop: '1rem',
-                padding: '0.85rem 1rem',
-                background: 'linear-gradient(135deg, #ecfdf5, #f0fdfa)',
-                border: '1px solid #a7f3d0',
-                borderRadius: 8,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Quote</span>
-                  <span style={{ fontFamily: 'Space Mono, monospace', fontSize: '1.5rem', fontWeight: 700, color: 'var(--green)' }}>$184.50</span>
+            {/* RIGHT — Outputs */}
+            <div className="reveal" data-delay="2">
+              <div className="panel-label" style={{ marginBottom: 12 }}>3. Your outputs</div>
+              <div className="big-output-panel">
+                <div className="big-tabs">
+                  <button className={`big-tab ${bigTab === 'mockup' ? 'active' : ''}`} onClick={() => setBigTab('mockup')}>✦ Neon Mockup</button>
+                  <button className={`big-tab ${bigTab === 'sketch' ? 'active' : ''}`} onClick={() => setBigTab('sketch')}>◎ Tech Sketch</button>
+                  <button className={`big-tab ${bigTab === 'quote' ? 'active' : ''}`}  onClick={() => setBigTab('quote')}>$ Cost Quote</button>
                 </div>
+
+                {bigTab === 'mockup' && (
+                  <>
+                    <div className="sign-selector">
+                      {SIGN_OPTIONS.map(s => (
+                        <button key={s.word}
+                          className={`sign-opt ${bigSign.word === s.word ? 'active' : ''}`}
+                          onClick={() => setBigSign(s)}
+                        >
+                          {s.word}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mockup-display">
+                      <span
+                        key={bigSign.word}
+                        className="big-neon-sign"
+                        style={{
+                          color: bigSign.color,
+                          textShadow:
+                            `0 0 7px ${bigSign.color}, 0 0 15px ${bigSign.color},` +
+                            ` 0 0 30px rgba(${bigSign.glow},0.8),` +
+                            ` 0 0 60px rgba(${bigSign.glow},0.4),` +
+                            ` 0 0 100px rgba(${bigSign.glow},0.2)`,
+                        }}
+                      >
+                        {bigSign.word}
+                      </span>
+                    </div>
+                    <div className="output-details">
+                      <div className="detail-card"><div className="d-label">Tube length</div><div className="d-value">3.12 m</div></div>
+                      <div className="detail-card"><div className="d-label">Tolerance</div><div className="d-value">±4.8%</div></div>
+                      <div className="detail-card amber"><div className="d-label">Quote</div><div className="d-value">$184.50</div></div>
+                      <div className="detail-card"><div className="d-label">Tier</div><div className="d-value">GLASS-CUT</div></div>
+                      <div className="detail-card green"><div className="d-label">Confidence</div><div className="d-value">High</div></div>
+                      <div className="detail-card"><div className="d-label">Sign width</div><div className="d-value">24 in</div></div>
+                    </div>
+                  </>
+                )}
+
+                {bigTab === 'sketch' && (
+                  <>
+                    <div className="sketch-display">
+                      <div className="sketch-svg-wrap">
+                        <BigSketchSvg />
+                      </div>
+                    </div>
+                    <div className="output-details">
+                      <div className="detail-card"><div className="d-label">Tube paths</div><div className="d-value">14</div></div>
+                      <div className="detail-card"><div className="d-label">Bend count</div><div className="d-value">22</div></div>
+                      <div className="detail-card"><div className="d-label">Straight runs</div><div className="d-value">8</div></div>
+                      <div className="detail-card"><div className="d-label">Resolution</div><div className="d-value">2400 dpi</div></div>
+                      <div className="detail-card green"><div className="d-label">Status</div><div className="d-value">Cut-ready</div></div>
+                      <div className="detail-card"><div className="d-label">Format</div><div className="d-value">SVG / PDF</div></div>
+                    </div>
+                  </>
+                )}
+
+                {bigTab === 'quote' && (
+                  <div className="quote-display">
+                    <div className="quote-row"><span className="q-label">Tube length</span><span className="q-value">3.12 m</span></div>
+                    <div className="quote-row"><span className="q-label">Cost per metre</span><span className="q-value">$42.00</span></div>
+                    <div className="quote-row"><span className="q-label">Raw material cost</span><span className="q-value">$131.04</span></div>
+                    <div className="quote-row"><span className="q-label">Labour estimate</span><span className="q-value">~2.5 hrs</span></div>
+                    <div className="quote-row"><span className="q-label">Markup applied</span><span className="q-value">40%</span></div>
+                    <div className="quote-row"><span className="q-label">Outdoor surcharge</span><span className="q-value">+$18.00</span></div>
+                    <div className="quote-row total"><span className="q-label">Total customer quote</span><span className="q-value">$184.50</span></div>
+                  </div>
+                )}
               </div>
-            </BentoCell>
-
-            {/* REST API */}
-            <BentoCell span={3}>
-              <BentoEyebrow>REST API</BentoEyebrow>
-              <div style={bentoTitle}>Bake it into your shop.</div>
-              <div style={bentoDesc}>One POST. Everything you see in the dashboard, also as JSON.</div>
-              <pre style={{
-                flex: 1, marginTop: '1rem',
-                background: 'var(--dark)',
-                borderRadius: 8, padding: '1rem',
-                fontFamily: 'Space Mono, monospace', fontSize: '0.72rem',
-                color: '#c8c8d8', lineHeight: 1.7, overflowX: 'auto',
-              }}>
-{`# Measure a sign image
-`}<span style={{ color: '#f472b6' }}>POST</span>{` /v1/measure
-{
-  `}<span style={{ color: '#34d399' }}>{`"image"`}</span>{`: ...,
-  `}<span style={{ color: '#34d399' }}>{`"width_in"`}</span>{`: 24
-}`}
-              </pre>
-            </BentoCell>
-
-            {/* Formats */}
-            <BentoCell span={2}>
-              <BentoEyebrow>File formats</BentoEyebrow>
-              <div style={bentoTitle}>Bring anything.</div>
-              <div style={{ flex: 1, marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', alignContent: 'center' }}>
-                {['PNG', 'JPG', 'SVG', 'CDR'].map(f => (
-                  <div key={f} style={{
-                    padding: '0.7rem',
-                    border: '1px solid var(--border)', borderRadius: 6,
-                    textAlign: 'center', fontFamily: 'Space Mono, monospace', fontSize: '0.78rem',
-                    color: 'var(--text-dim)', background: 'var(--bg-1)',
-                  }}>{f}</div>
-                ))}
-              </div>
-            </BentoCell>
-
-            {/* ML accuracy */}
-            <BentoCell span={2}>
-              <BentoEyebrow>ML boost</BentoEyebrow>
-              <div style={bentoTitle}>±5% on clean sketches.</div>
-              <div style={bentoDesc}>Optional ML correction layer learns from your shop's past jobs and tightens accuracy over time.</div>
-            </BentoCell>
-
-            {/* 24/7 */}
-            <BentoCell span={2}>
-              <BentoEyebrow>Always on</BentoEyebrow>
-              <div style={bentoTitle}>24 / 7, sub-5 second runs.</div>
-              <div style={bentoDesc}>Quote a wedding sign at 11pm. Quote 200 in a morning. Same speed.</div>
-            </BentoCell>
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS (FLOW CHART) ────────────────────────────────────── */}
-      <section style={sectionStyle} id="how">
-        <div style={containerStyle}>
-          <SectionHead
-            eyebrow="Process"
-            title={<>How it <span className="neon-pink">works</span></>}
-            sub="Four steps from a customer's image to a quote you can send."
-          />
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: '0.5rem', flexWrap: 'wrap', marginTop: '3rem' }} className="steps-row">
-            <StepNode num="01" title="Upload" desc="Drop in your sign image. The format is detected automatically." />
-            <StepArrow />
-            <StepNode num="02" title="Process" desc="Our pipeline traces every tube path and measures the geometry." />
-            <StepArrow />
-            <StepNode num="03" title="Validate" desc="Physics checks confirm tube diameter, length-per-inch and image resolution." />
-            <StepArrow />
-            <StepNode num="04" title="Quote" desc="Receive a cut-ready length and a confidence band. Bend it, or quote the customer." />
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ──────────────────────────────────────────────────────────── */}
-      <section style={{
-        ...sectionStyle, textAlign: 'center',
-        background: 'linear-gradient(135deg, #fdf2f7 0%, #f0fdfa 100%)',
-      }}>
-        <div style={containerStyle}>
-          <h2 style={{
-            fontFamily: 'Bebas Neue, sans-serif',
-            fontSize: 'clamp(2.1rem, 4.5vw, 3.2rem)',
-            letterSpacing: '0.03em', marginBottom: '0.85rem', lineHeight: 1.05,
-          }}>
-            Quote your first sign in <span className="neon-pink">60 seconds.</span>
-          </h2>
-          <p style={{ color: 'var(--text-dim)', fontSize: '1.05rem', maxWidth: '620px', margin: '0 auto 2rem', lineHeight: 1.6 }}>
-            Free forever — 20 measurements every month, no credit card required.
-          </p>
-          <Link href="/register">
-            <button className="btn-neon" style={{ padding: '0.95rem 1.8rem', fontSize: '0.95rem' }}>
-              Create your free account →
-            </button>
-          </Link>
-        </div>
-      </section>
-
-      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
-      <footer style={{
-        background: 'var(--dark)', color: '#c8c8d8',
-        padding: '4rem 2rem 2rem',
-      }}>
-        <div style={{
-          maxWidth: '1180px', margin: '0 auto',
-          display: 'grid', gridTemplateColumns: '1.3fr 1fr 1fr 1fr 1fr', gap: '3rem',
-          marginBottom: '3rem',
-        }} className="footer-grid">
-          <div>
-            <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.6rem', letterSpacing: '0.04em', marginBottom: '0.85rem' }}>
-              <span style={{ color: '#fff' }}>Neon</span><span style={{ color: 'var(--pink)' }}>izer</span>
-            </div>
-            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.85rem', lineHeight: 1.6, maxWidth: 280 }}>
-              Precision tube-length measurement and instant quoting for neon sign manufacturers.
             </div>
           </div>
-          <FooterCol heading="Product" links={[
-            ['Studio', '/studio'], ['Quick Measure', '/dashboard'], ['Pricing', '/pricing'], ['API', '#'],
-          ]} />
-          <FooterCol heading="Resources" links={[
-            ['Documentation', '#'], ['Tutorials', '#'], ['Blog', '#'], ['FAQ', '#'],
-          ]} />
-          <FooterCol heading="Company" links={[
-            ['About', '#'], ['Contact', '#'], ['Status', '#'],
-          ]} />
-          <FooterCol heading="Legal" links={[
-            ['Terms', '#'], ['Privacy', '#'], ['Security', '#'],
-          ]} />
         </div>
-        <div style={{
-          maxWidth: '1180px', margin: '0 auto',
-          borderTop: '1px solid rgba(255,255,255,0.1)',
-          paddingTop: '1.5rem',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          flexWrap: 'wrap', gap: '1rem',
-          color: 'rgba(255,255,255,0.45)', fontFamily: 'Space Mono, monospace', fontSize: '0.75rem',
-        }}>
-          <span>© 2026 Neonizer. All rights reserved.</span>
-          <span>Built for neon manufacturers.</span>
+      </section>
+
+      {/* ───────── FEATURES ───────── */}
+      <section className="section">
+        <div className="wrapper">
+          <div className="reveal">
+            <div className="section-tag">Everything you need</div>
+            <h2 className="section-title">Built for neon shops, end to end.</h2>
+            <p className="section-sub">
+              Neonizer isn&rsquo;t a single tool — it&rsquo;s a full production workflow.
+              Mockup, measure, price, and deliver, all from one platform.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            <div className="feature-card reveal" data-delay="1">
+              <div className="feature-icon">✦</div>
+              <h3>AI Neon Mockup</h3>
+              <p>Drop in a flat brand logo and Neonizer renders a photoreal LED neon mockup — the exact look your customer is signing off on.</p>
+            </div>
+            <div className="feature-card reveal" data-delay="2">
+              <div className="feature-icon cyan">◎</div>
+              <h3>Tube Extraction</h3>
+              <p>Centerlines pulled straight from your mockup. Every path traced, every bend counted. Send the sketch to your bender as-is.</p>
+            </div>
+            <div className="feature-card reveal" data-delay="3">
+              <div className="feature-icon amber">$</div>
+              <h3>Breakeven Pricing</h3>
+              <p>Tube length × your cost per metre × your markup. Set it once, every quote uses it. Know your margin before you send anything.</p>
+            </div>
+            <div className="feature-card reveal" data-delay="1">
+              <div className="feature-icon">⬡</div>
+              <h3>Instruction Toolbox</h3>
+              <p>Guide the AI with custom instructions and preset chips — outdoor, RGB, double-sided, wall-mount. The output adapts to your spec.</p>
+            </div>
+            <div className="feature-card reveal" data-delay="2">
+              <div className="feature-icon cyan">{'{ }'}</div>
+              <h3>REST API</h3>
+              <p>One POST request. Everything you see in the dashboard, also as JSON. Bake Neonizer into your existing shop software or CRM.</p>
+            </div>
+            <div className="feature-card reveal" data-delay="3">
+              <div className="feature-icon amber">⚡</div>
+              <h3>Always On, Sub-5s</h3>
+              <p>Quote a wedding sign at 11 pm. Process 200 in a morning. Same &lt;5 second speed, 24/7. No queue, no downtime.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── HOW IT WORKS ───────── */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="wrapper">
+          <div className="reveal" style={{ textAlign: 'center', marginBottom: 0 }}>
+            <div className="section-tag" style={{ justifyContent: 'center' }}>The process</div>
+            <h2 className="section-title">Four steps, one send.</h2>
+          </div>
+
+          <div className="steps-grid">
+            <div className="step-item reveal" data-delay="1">
+              <div className="step-num">01</div>
+              <h4>Upload</h4>
+              <p>Drop in your sign image. Format is detected automatically.</p>
+            </div>
+            <div className="step-item reveal" data-delay="2">
+              <div className="step-num">02</div>
+              <h4>Instruct</h4>
+              <p>Set your specs in the toolbox — or use the quick-select chips.</p>
+            </div>
+            <div className="step-item reveal" data-delay="3">
+              <div className="step-num">03</div>
+              <h4>Generate</h4>
+              <p>AI traces every tube, renders the mockup, and measures geometry in under 5 seconds.</p>
+            </div>
+            <div className="step-item reveal" data-delay="4">
+              <div className="step-num">04</div>
+              <h4>Quote</h4>
+              <p>Receive your mockup, sketch, and final quote. Send it, bend it, done.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── CTA ───────── */}
+      <section className="cta-section">
+        <div className="wrapper">
+          <div className="cta-inner reveal">
+            <h2>Quote your first sign<br />in <span style={{ color: 'var(--pink)' }}>60 seconds.</span></h2>
+            <p>Free forever — 20 measurements every month, no credit card required. Join 120+ sign manufacturers already quoting faster.</p>
+            <div className="cta-actions">
+              <Link href="/register">
+                <button className="btn-primary" style={{ fontSize: '1rem', padding: '15px 32px' }}>
+                  Create your free account →
+                </button>
+              </Link>
+              <Link href="/pricing">
+                <button className="btn-secondary">View pricing</button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────── FOOTER ───────── */}
+      <footer className="footer">
+        <div className="wrapper">
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <div className="nav-logo">
+                <span className="logo-dot" />
+                Neonizer
+              </div>
+              <p>Precision tube-length measurement and instant quoting for neon sign manufacturers. Built for the shop floor.</p>
+            </div>
+            <div className="footer-col">
+              <h5>Product</h5>
+              <ul>
+                <li><Link href="/studio">Studio</Link></li>
+                <li><Link href="/dashboard">Quick Measure</Link></li>
+                <li><Link href="/pricing">Pricing</Link></li>
+                <li><Link href="#">API</Link></li>
+              </ul>
+            </div>
+            <div className="footer-col">
+              <h5>Resources</h5>
+              <ul>
+                <li><Link href="#">Documentation</Link></li>
+                <li><Link href="#">Tutorials</Link></li>
+                <li><Link href="#">Blog</Link></li>
+                <li><Link href="#">FAQ</Link></li>
+              </ul>
+            </div>
+            <div className="footer-col">
+              <h5>Company</h5>
+              <ul>
+                <li><Link href="#">About</Link></li>
+                <li><Link href="#">Contact</Link></li>
+                <li><Link href="#">Status</Link></li>
+                <li><Link href="#">Terms</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <span>© 2026 Neonizer. All rights reserved.</span>
+            <span>Built for neon manufacturers.</span>
+          </div>
         </div>
       </footer>
-
-      {/* ── RESPONSIVE OVERRIDES ─────────────────────────────────────────── */}
-      <style jsx global>{`
-        @media (max-width: 1000px) {
-          .hero-grid { grid-template-columns: 1fr !important; gap: 3rem !important; }
-          .ba-grid   { grid-template-columns: 1fr !important; }
-          .bento-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .footer-grid { grid-template-columns: 1fr 1fr !important; gap: 2rem !important; }
-        }
-        @media (max-width: 720px) {
-          .steps-row { flex-direction: column !important; gap: 0.25rem !important; }
-          .step-arrow { transform: rotate(90deg); padding: 0.4rem 0; }
-          .footer-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </div>
   );
 }
 
-/* ── HELPERS ────────────────────────────────────────────────────────── */
-const sectionStyle: React.CSSProperties = { padding: '5rem 2rem' };
-const containerStyle: React.CSSProperties = { maxWidth: '1180px', margin: '0 auto' };
+/* ─── helpers ─────────────────────────────────────────────────── */
 
-const demoCtrlLabel: React.CSSProperties = {
-  fontSize: '0.62rem', color: 'var(--text-muted)',
-  letterSpacing: '0.12em', textTransform: 'uppercase',
-};
-
-const baScreen: React.CSSProperties = {
-  aspectRatio: '4 / 3', borderRadius: 0,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  padding: '1.5rem',
-};
-const baScreenInner: React.CSSProperties = {
-  ...baScreen,
-  borderRadius: 0,
-};
-
-const bentoTitle: React.CSSProperties = {
-  fontFamily: 'Bebas Neue, sans-serif',
-  fontSize: '1.55rem', letterSpacing: '0.04em',
-  marginBottom: '0.5rem',
-};
-const bentoDesc: React.CSSProperties = {
-  color: 'var(--text-dim)', fontSize: '0.88rem', lineHeight: 1.55,
-};
-const bentoVisual: React.CSSProperties = {
-  flex: 1, marginTop: '1rem', borderRadius: 8,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  overflow: 'hidden', minHeight: 140, padding: '1rem',
-};
-
-function Stat({ label, value, unit, valueColor, small }: {
-  label: string; value: string; unit?: string; valueColor?: string; small?: boolean;
-}) {
+function CheckIcon() {
   return (
-    <div>
-      <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
-        {label}
-      </div>
-      <div style={{
-        fontFamily: 'Space Mono, monospace',
-        fontSize: small ? '0.85rem' : '1.25rem',
-        fontWeight: 700,
-        color: valueColor ?? 'var(--text)',
-        letterSpacing: small ? '0.05em' : 'normal',
-      }}>
-        {value}{unit && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 3, fontWeight: 400 }}>{unit}</span>}
-      </div>
-    </div>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M4.5 7l1.8 1.8 3-3.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
   );
 }
 
-function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: React.ReactNode; sub: string }) {
-  return (
-    <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto 3rem' }}>
-      <div style={{
-        fontFamily: 'Space Mono, monospace', fontSize: '0.7rem',
-        color: 'var(--pink)', letterSpacing: '0.18em', textTransform: 'uppercase',
-        marginBottom: '0.85rem',
-      }}>{eyebrow}</div>
-      <h2 style={{
-        fontFamily: 'Bebas Neue, sans-serif',
-        fontSize: 'clamp(2.1rem, 4.5vw, 3.2rem)',
-        letterSpacing: '0.03em', marginBottom: '0.85rem', lineHeight: 1.05,
-      }}>{title}</h2>
-      <p style={{ color: 'var(--text-dim)', fontSize: '1.05rem', maxWidth: 620, margin: '0 auto', lineHeight: 1.6 }}>
-        {sub}
-      </p>
-    </div>
-  );
-}
-
-function BACard({ step, title, desc, children }: { step: string; title: string; desc: string; children: React.ReactNode }) {
+function QRow({ label, value, total }: { label: string; value: string; total?: boolean }) {
   return (
     <div style={{
-      background: '#fff', border: '1px solid var(--border)',
-      borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--shadow)',
+      display: 'flex', justifyContent: 'space-between',
+      padding: total ? '8px 0' : '6px 0',
+      borderBottom: total ? 'none' : '1px solid var(--border)',
+      color: total ? 'var(--text)' : 'var(--text-2)',
+      fontWeight: total ? 700 : 400,
     }}>
-      {children}
-      <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid var(--border)' }}>
-        <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '0.65rem', color: 'var(--pink)', letterSpacing: '0.18em', marginBottom: '0.35rem' }}>{step}</div>
-        <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.2rem', letterSpacing: '0.04em' }}>{title}</div>
-        <div style={{ color: 'var(--text-dim)', fontSize: '0.83rem', lineHeight: 1.5, marginTop: '0.3rem' }}>{desc}</div>
-      </div>
+      <span style={{ color: total ? 'var(--text)' : undefined }}>{label}</span>
+      <span style={{
+        fontFamily: 'var(--font-mono)',
+        color: total ? 'var(--amber)' : 'var(--text)',
+        fontVariantNumeric: 'tabular-nums',
+      }}>{value}</span>
     </div>
   );
 }
 
-function BentoCell({ span, rowSpan, children }: { span: number; rowSpan?: boolean; children: React.ReactNode }) {
+function SmallSketchSvg() {
   return (
-    <div style={{
-      gridColumn: `span ${span}`,
-      gridRow: rowSpan ? 'span 2' : undefined,
-      background: '#fff', border: '1px solid var(--border)', borderRadius: 14,
-      padding: rowSpan ? '2rem' : '1.6rem',
-      transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-      display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative',
-    }}
-    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--pink)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.transform = ''; }}
-    >
-      {children}
-    </div>
+    <svg width="130" height="80" viewBox="0 0 130 80" fill="none" style={{ opacity: 0.6 }}>
+      <rect x="8" y="20" width="4" height="40" rx="2" fill="white" />
+      <rect x="8" y="20" width="20" height="4" rx="2" fill="white" />
+      <rect x="8" y="38" width="20" height="4" rx="2" fill="white" />
+      <rect x="8" y="56" width="20" height="4" rx="2" fill="white" />
+      <rect x="36" y="20" width="4" height="40" rx="2" fill="white" />
+      <rect x="50" y="20" width="4" height="40" rx="2" fill="white" />
+      <path d="M54 20 C54 20 68 20 68 38 C68 56 54 56 54 56" stroke="white" strokeWidth="4" strokeLinecap="round" fill="none" />
+      <rect x="76" y="20" width="4" height="40" rx="2" fill="white" />
+      <rect x="76" y="20" width="18" height="4" rx="2" fill="white" />
+      <rect x="90" y="20" width="4" height="40" rx="2" fill="white" />
+      <rect x="102" y="20" width="4" height="40" rx="2" fill="white" />
+      <path d="M106 20 L122 56" stroke="white" strokeWidth="4" strokeLinecap="round" />
+      <path d="M106 56 L122 20" stroke="white" strokeWidth="4" strokeLinecap="round" />
+    </svg>
   );
 }
 
-function BentoEyebrow({ children }: { children: React.ReactNode }) {
+function Stage3SketchSvg() {
   return (
-    <div style={{
-      fontFamily: 'Space Mono, monospace', fontSize: '0.62rem',
-      color: 'var(--pink)', letterSpacing: '0.18em', textTransform: 'uppercase',
-      marginBottom: '0.7rem',
-    }}>{children}</div>
+    <svg viewBox="0 0 100 70" fill="none">
+      <rect x="5" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7" />
+      <rect x="5" y="10" width="18" height="3" rx="1.5" fill="white" opacity="0.7" />
+      <rect x="5" y="33" width="18" height="3" rx="1.5" fill="white" opacity="0.7" />
+      <rect x="5" y="57" width="18" height="3" rx="1.5" fill="white" opacity="0.7" />
+      <rect x="28" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7" />
+      <rect x="40" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7" />
+      <path d="M43 10 C43 10 57 10 57 30 C57 50 43 50 43 50" stroke="white" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.7" />
+      <rect x="65" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7" />
+      <path d="M68 10 L83 60" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
+      <path d="M68 60 L83 10" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
+      <line x1="2" y1="65" x2="88" y2="65" stroke="rgba(255,20,100,0.6)" strokeWidth="0.8" strokeDasharray="3,2" />
+      <text x="44" y="69" fill="rgba(255,20,100,0.8)" fontSize="4" fontFamily="monospace" textAnchor="middle">3.12 m · ±5%</text>
+    </svg>
   );
 }
 
-function StepNode({ num, title, desc }: { num: string; title: string; desc: string }) {
+function BigSketchSvg() {
   return (
-    <div className="card" style={{
-      flex: '1 1 180px',
-      padding: '1.75rem 1.25rem 1.5rem',
-      textAlign: 'center', position: 'relative',
-    }}>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 42, height: 42, borderRadius: '50%',
-        background: 'var(--pink)', color: '#fff',
-        fontFamily: 'Space Mono, monospace', fontSize: '0.8rem', fontWeight: 700,
-        marginBottom: '0.95rem',
-        boxShadow: '0 4px 14px rgba(233,30,99,0.3)',
-        position: 'relative', zIndex: 1,
-      }}>{num}</div>
-      <div style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.4rem', letterSpacing: '0.05em', marginBottom: '0.45rem' }}>{title}</div>
-      <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem', lineHeight: 1.55 }}>{desc}</div>
-    </div>
-  );
-}
-
-function StepArrow() {
-  return (
-    <div className="step-arrow" aria-hidden style={{
-      flex: '0 0 32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: 'var(--pink)', alignSelf: 'center',
-    }}>
-      <svg width={44} height={14} viewBox="0 0 44 14" fill="none">
-        <line x1={0} y1={7} x2={34} y2={7} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeDasharray="4 5" />
-        <path d="M32 1L42 7L32 13" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
-    </div>
-  );
-}
-
-function FooterCol({ heading, links }: { heading: string; links: [string, string][] }) {
-  return (
-    <div>
-      <h4 style={{
-        fontFamily: 'Space Mono, monospace', fontSize: '0.7rem',
-        letterSpacing: '0.18em', textTransform: 'uppercase',
-        color: 'rgba(255,255,255,0.55)', marginBottom: '1rem',
-      }}>{heading}</h4>
-      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-        {links.map(([label, href]) => (
-          <li key={label}>
-            <Link href={href} style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem', textDecoration: 'none' }}>
-              {label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <svg width="320" height="120" viewBox="0 0 320 120" fill="none">
+      {/* O */}
+      <rect x="10" y="15" width="6" height="75" rx="3" fill="white" />
+      <rect x="10" y="15" width="36" height="6" rx="3" fill="white" />
+      <rect x="10" y="84" width="36" height="6" rx="3" fill="white" />
+      <rect x="40" y="15" width="6" height="75" rx="3" fill="white" />
+      {/* P */}
+      <rect x="60" y="15" width="6" height="75" rx="3" fill="white" />
+      <rect x="60" y="15" width="6" height="6" rx="3" fill="white" />
+      <path d="M66 15 C66 15 96 15 96 38 C96 61 66 61 66 61" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none" />
+      {/* E */}
+      <rect x="112" y="15" width="6" height="75" rx="3" fill="white" />
+      <rect x="112" y="15" width="36" height="6" rx="3" fill="white" />
+      <rect x="112" y="51" width="28" height="6" rx="3" fill="white" />
+      <rect x="112" y="84" width="36" height="6" rx="3" fill="white" />
+      {/* N */}
+      <rect x="164" y="15" width="6" height="75" rx="3" fill="white" />
+      <path d="M170 15 L200 90" stroke="white" strokeWidth="6" strokeLinecap="round" />
+      <rect x="200" y="15" width="6" height="75" rx="3" fill="white" />
+      {/* Dimension lines */}
+      <line x1="5" y1="108" x2="210" y2="108" stroke="rgba(255,20,100,0.5)" strokeWidth="1" strokeDasharray="4,3" />
+      <line x1="5" y1="103" x2="5" y2="113" stroke="rgba(255,20,100,0.5)" strokeWidth="1" />
+      <line x1="210" y1="103" x2="210" y2="113" stroke="rgba(255,20,100,0.5)" strokeWidth="1" />
+      <text x="107" y="118" fill="rgba(255,20,100,0.7)" fontSize="8" fontFamily="monospace" textAnchor="middle">3.12 m · ±4.8% · GLASS-CUT</text>
+      {/* Bend markers */}
+      <circle cx="40" cy="15" r="3" fill="rgba(0,229,200,0.7)" />
+      <circle cx="10" cy="15" r="3" fill="rgba(0,229,200,0.7)" />
+      <circle cx="10" cy="90" r="3" fill="rgba(0,229,200,0.7)" />
+      <circle cx="46" cy="90" r="3" fill="rgba(0,229,200,0.7)" />
+      <circle cx="66" cy="15" r="3" fill="rgba(0,229,200,0.7)" />
+      <circle cx="66" cy="61" r="3" fill="rgba(0,229,200,0.7)" />
+    </svg>
   );
 }

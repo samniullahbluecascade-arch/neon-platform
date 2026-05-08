@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neonizer — Quote any neon sign in 60 seconds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+/* ─── Design Tokens ───────────────────────────────────────────── */
+:root {
+  --bg:        #FFFFFF;
+  --surface:   #F8F9FC;
+  --surface-2: #F0F2F8;
+  --surface-3: #E8EBF4;
+  --border:    rgba(0,0,0,0.08);
+  --border-2:  rgba(0,0,0,0.14);
+
+  --pink:      #E8175D;
+  --pink-dim:  rgba(232,23,93,0.07);
+  --pink-glow: rgba(232,23,93,0.18);
+  --cyan:      #0891B2;
+  --cyan-dim:  rgba(8,145,178,0.08);
+  --amber:     #D97706;
+  --amber-dim: rgba(217,119,6,0.08);
+
+  --text:      #0F1117;
+  --text-2:    #4B5563;
+  --text-3:    #9CA3AF;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 6px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.06);
+
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'Outfit', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  --radius:    10px;
+  --radius-lg: 18px;
+}
+
+/* ─── Reset & Base ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Atmospheric bg */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 0% 0%, rgba(232,23,93,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 600px at 100% 100%, rgba(8,145,178,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+a { text-decoration: none; color: inherit; }
+button { cursor: pointer; font-family: inherit; }
+img { max-width: 100%; display: block; }
+
+.wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Navbar ──────────────────────────────────────────────────── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255,255,255,0.92);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  height: 64px;
+}
+
+.nav-logo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--pink);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+.nav-links { display: flex; align-items: center; gap: 32px; }
+
+.nav-links a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: color 0.2s;
+  letter-spacing: 0.01em;
+}
+
+.nav-links a:hover { color: var(--text); }
+
+.nav-cta {
+  background: var(--pink);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(232,23,93,0.25);
+  letter-spacing: 0.01em;
+}
+
+.nav-cta:hover {
+  box-shadow: 0 4px 16px rgba(232,23,93,0.35);
+  transform: translateY(-1px);
+}
+
+/* ─── Hero ────────────────────────────────────────────────────── */
+.hero {
+  padding: 140px 0 100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--pink-dim);
+  border: 1px solid rgba(255,20,100,0.2);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.badge-dot {
+  width: 6px; height: 6px;
+  background: var(--pink);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--pink);
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+}
+
+.hero-headline .accent {
+  color: var(--pink);
+  position: relative;
+  display: inline-block;
+  animation: accent-in 0.8s ease-out both;
+  animation-delay: 0.3s;
+}
+
+@keyframes accent-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--text-2);
+  line-height: 1.65;
+  max-width: 480px;
+  margin-bottom: 36px;
+  font-weight: 400;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: var(--pink);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 13px 28px;
+  border-radius: 10px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 12px rgba(232,23,93,0.28);
+  transition: all 0.25s;
+  letter-spacing: 0.01em;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(232,23,93,0.36);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 13px 24px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  color: var(--text);
+  border-color: rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.03);
+}
+
+.play-icon {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem;
+}
+
+.trust-chips {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.trust-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.trust-chip svg { color: var(--cyan); }
+
+/* ─── Hero App Preview ────────────────────────────────────────── */
+.app-frame {
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  animation: frame-in 0.8s cubic-bezier(0.16,1,0.3,1) both;
+  animation-delay: 0.1s;
+}
+
+@keyframes frame-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.frame-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.dot-r { width: 10px; height: 10px; border-radius: 50%; background: #FF5F57; }
+.dot-y { width: 10px; height: 10px; border-radius: 50%; background: #FFBD2E; }
+.dot-g { width: 10px; height: 10px; border-radius: 50%; background: #28C840; }
+
+.frame-url {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-3);
+  background: rgba(0,0,0,0.05);
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.frame-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.frame-input {
+  padding: 16px;
+  border-right: 1px solid var(--border);
+}
+
+/* Upload zone */
+.upload-zone {
+  border: 1.5px dashed rgba(255,20,100,0.3);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  text-align: center;
+  background: var(--pink-dim);
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.upload-zone:hover {
+  border-color: rgba(255,20,100,0.6);
+  background: rgba(255,20,100,0.08);
+}
+
+.upload-icon-wrap {
+  width: 36px; height: 36px;
+  background: rgba(255,20,100,0.15);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 8px;
+  font-size: 1rem;
+  color: var(--pink);
+}
+
+.upload-zone p {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.upload-zone span {
+  font-size: 0.62rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* Instruction box */
+.instruction-box-frame {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.instr-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.instr-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,229,200,0.2);
+}
+
+.ai-dot {
+  width: 5px; height: 5px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+  margin-left: auto;
+}
+
+.instr-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  line-height: 1.5;
+  resize: none;
+  height: 42px;
+  margin-bottom: 8px;
+}
+
+.instr-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.chip-sm {
+  font-size: 0.58rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 100px;
+  border: 1px solid var(--border-2);
+  color: var(--text-3);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.chip-sm:hover { border-color: rgba(255,20,100,0.4); color: var(--pink); }
+.chip-sm.on {
+  background: var(--pink-dim);
+  border-color: rgba(255,20,100,0.3);
+  color: var(--pink);
+}
+
+.gen-btn {
+  width: 100%;
+  background: var(--pink);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 7px;
+  border-radius: 6px;
+  border: none;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(232,23,93,0.25);
+  transition: all 0.2s;
+}
+
+.gen-btn:hover {
+  box-shadow: 0 4px 14px rgba(232,23,93,0.35);
+  transform: translateY(-1px);
+}
+
+/* Output panel */
+.frame-output {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.output-tabs-sm {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 7px;
+}
+
+.tab-sm {
+  flex: 1;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  transition: all 0.15s;
+  letter-spacing: 0.03em;
+}
+
+.tab-sm.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+
+.neon-preview-box {
+  background: #020209;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  border: 1px solid rgba(255,20,100,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.neon-preview-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,20,100,0.08) 0%, transparent 70%);
+}
+
+.neon-sign-text {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #FF1464;
+  text-shadow:
+    0 0 7px #FF1464,
+    0 0 14px #FF1464,
+    0 0 28px rgba(255,20,100,0.8),
+    0 0 56px rgba(255,20,100,0.4);
+  letter-spacing: 0.06em;
+  animation: neon-flicker 4s ease-in-out infinite;
+}
+
+@keyframes neon-flicker {
+  0%, 96%, 100%   { opacity: 1; }
+  97%             { opacity: 0.85; }
+  98%             { opacity: 1; }
+  99%             { opacity: 0.7; }
+}
+
+.output-meta-sm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.meta-pill {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.meta-pill .label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  display: block;
+  margin-bottom: 1px;
+}
+
+.meta-pill .value {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.meta-pill.highlight .value { color: var(--amber); }
+
+/* ─── Stats Bar ───────────────────────────────────────────────── */
+.stats-bar {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 36px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 0 20px;
+  position: relative;
+}
+
+.stat-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 10%; bottom: 10%;
+  width: 1px;
+  background: var(--border);
+}
+
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-value span { color: var(--pink); }
+
+.stat-label {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+/* ─── Section Common ──────────────────────────────────────────── */
+.section { padding: 100px 0; }
+
+.section-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 16px;
+}
+
+.section-tag::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--pink);
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  margin-bottom: 16px;
+}
+
+.section-sub {
+  font-size: 1rem;
+  color: var(--text-2);
+  max-width: 520px;
+  line-height: 1.65;
+}
+
+/* ─── 3-Stage Visual ──────────────────────────────────────────── */
+.stages-header {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 60px;
+}
+
+.stages-header .section-sub { margin: 0 auto; }
+
+.stages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  position: relative;
+}
+
+.stages-grid::before {
+  content: '';
+  position: absolute;
+  top: 80px; left: calc(33.33% + 12px); right: calc(33.33% + 12px);
+  height: 1px;
+  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  opacity: 0.3;
+}
+
+.stage-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s;
+}
+
+.stage-card:hover {
+  border-color: var(--border-2);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.stage-visual {
+  height: 160px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.stage-visual.neon-bg {
+  background: #020209;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.2rem;
+  color: #FF1464;
+  text-shadow:
+    0 0 10px #FF1464,
+    0 0 20px rgba(255,20,100,0.7),
+    0 0 40px rgba(255,20,100,0.4);
+  letter-spacing: 0.08em;
+}
+
+.stage-visual.neon-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,20,100,0.08) 0%, transparent 60%);
+}
+
+.stage-visual.sketch-bg {
+  background: #0a0a0a;
+}
+
+.sketch-lines {
+  width: 100px; height: 80px;
+  position: relative;
+  opacity: 0.7;
+}
+
+.sketch-lines svg { width: 100%; height: 100%; }
+
+.stage-body { padding: 20px 22px; }
+
+.stage-num {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--pink);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.stage-card .title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.stage-card p {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+
+/* ─── Demo Section ────────────────────────────────────────────── */
+.demo-section {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 100px 0;
+}
+
+.demo-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 60px;
+  align-items: start;
+}
+
+/* Big instruction toolbox */
+.big-input-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.big-upload {
+  border: 2px dashed rgba(255,20,100,0.25);
+  border-radius: var(--radius-lg);
+  padding: 36px;
+  text-align: center;
+  background: var(--pink-dim);
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.big-upload:hover {
+  border-color: rgba(255,20,100,0.5);
+  background: rgba(255,20,100,0.08);
+}
+
+.big-upload-icon {
+  width: 52px; height: 52px;
+  background: rgba(255,20,100,0.12);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 14px;
+  font-size: 1.4rem;
+  border: 1px solid rgba(255,20,100,0.2);
+  color: var(--pink);
+  transition: all 0.2s;
+}
+
+.big-upload:hover .big-upload-icon {
+  background: rgba(255,20,100,0.2);
+  box-shadow: 0 0 16px var(--pink-glow);
+}
+
+.big-upload h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.big-upload p {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  margin-bottom: 14px;
+}
+
+.format-chips {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.fmt {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+}
+
+/* Big instruction box */
+.big-instr-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.big-instr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.instr-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.instr-title .badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  background: var(--cyan-dim);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,229,200,0.2);
+}
+
+.ai-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--cyan);
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.big-instr-body {
+  padding: 16px 18px;
+}
+
+.big-instr-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  resize: none;
+  height: 96px;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 14px;
+}
+
+.big-instr-textarea:focus {
+  border-color: rgba(0,229,200,0.3);
+}
+
+.big-instr-textarea::placeholder { color: var(--text-3); }
+
+.chips-section-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.chip-lg {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.chip-lg:hover {
+  border-color: rgba(0,229,200,0.4);
+  color: var(--cyan);
+}
+
+.chip-lg.on {
+  background: var(--cyan-dim);
+  border-color: rgba(0,229,200,0.3);
+  color: var(--cyan);
+}
+
+.chip-lg.pink.on {
+  background: var(--pink-dim);
+  border-color: rgba(255,20,100,0.3);
+  color: var(--pink);
+}
+
+.big-gen-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #E8175D, #FF4080);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 14px;
+  border-radius: 8px;
+  border: none;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 16px rgba(232,23,93,0.30), 0 2px 6px rgba(0,0,0,0.10);
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.big-gen-btn:hover {
+  box-shadow: 0 8px 28px rgba(232,23,93,0.38), 0 4px 10px rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+/* ─── Toolbox Controls ────────────────────────────────────────── */
+.toolbox-row {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.toolbox-field { display: flex; flex-direction: column; gap: 6px; }
+
+.toolbox-field label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Width input */
+.width-input-wrap {
+  position: relative;
+}
+
+.width-input {
+  width: 100%;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 9px 36px 9px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -moz-appearance: textfield;
+}
+
+.width-input::-webkit-outer-spin-button,
+.width-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.width-input:focus {
+  border-color: rgba(232,23,93,0.4);
+  box-shadow: 0 0 0 3px rgba(232,23,93,0.08);
+}
+
+.width-unit {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-3);
+  pointer-events: none;
+  font-family: var(--font-mono);
+}
+
+.color-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(0,0,0,0.03);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  padding: 9px 28px 9px 36px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.color-select:focus {
+  border-color: rgba(255,20,100,0.4);
+  box-shadow: 0 0 0 3px rgba(255,20,100,0.08);
+}
+
+.color-select option { background: #FFFFFF; color: var(--text); }
+
+.color-swatch {
+  position: absolute;
+  left: 11px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  pointer-events: none;
+  transition: background 0.25s, box-shadow 0.25s;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 0.55rem;
+  pointer-events: none;
+}
+
+/* Background Upload */
+.bg-upload-zone {
+  background: rgba(255,255,255,0.02);
+  border: 1.5px dashed var(--border-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-upload-zone:hover {
+  border-color: rgba(0,229,200,0.35);
+  background: var(--cyan-dim);
+}
+
+.bg-upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.bg-upload-icon {
+  width: 32px; height: 32px;
+  border-radius: 7px;
+  background: var(--cyan-dim);
+  border: 1px solid rgba(0,229,200,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem;
+  color: var(--cyan);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.bg-upload-zone:hover .bg-upload-icon {
+  background: rgba(8,145,178,0.18);
+  box-shadow: 0 2px 8px rgba(8,145,178,0.2);
+}
+
+.bg-upload-text p {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.bg-upload-text span {
+  font-size: 0.62rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.bg-file-name {
+  font-size: 0.68rem;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  margin-top: 8px;
+  padding: 5px 10px;
+  background: var(--cyan-dim);
+  border-radius: 5px;
+  border: 1px solid rgba(0,229,200,0.2);
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.bg-file-name.visible { display: flex; }
+
+/* UV Checkbox */
+.uv-checkbox-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  margin-bottom: 14px;
+}
+
+.uv-checkbox-wrap:hover {
+  border-color: rgba(255,180,0,0.3);
+  background: var(--amber-dim);
+}
+
+.uv-checkbox-wrap.checked {
+  border-color: rgba(255,180,0,0.4);
+  background: var(--amber-dim);
+}
+
+.uv-checkbox {
+  width: 18px; height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-2);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.18s;
+}
+
+.uv-checkbox-wrap:hover .uv-checkbox { border-color: rgba(255,180,0,0.5); }
+
+.uv-checkbox-wrap.checked .uv-checkbox {
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 2px 8px rgba(217,119,6,0.3);
+}
+
+.uv-check-icon {
+  color: #000;
+  font-size: 0.65rem;
+  font-weight: 900;
+  opacity: 0;
+  transition: opacity 0.15s;
+  line-height: 1;
+}
+
+.uv-checkbox-wrap.checked .uv-check-icon { opacity: 1; }
+
+.uv-label-wrap { flex: 1; }
+
+.uv-label-wrap strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.uv-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: var(--amber-dim);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,180,0,0.2);
+}
+
+.uv-label-wrap p {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  line-height: 1.45;
+}
+
+/* UV Part reveal field */
+.uv-part-field {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease, margin 0.3s ease;
+  margin-bottom: 0;
+}
+
+.uv-part-field.visible {
+  max-height: 120px;
+  opacity: 1;
+  margin-bottom: 14px;
+}
+
+/* Big output panel */
+.big-output-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.big-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.big-tab {
+  flex: 1;
+  padding: 14px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.big-tab.active {
+  color: var(--pink);
+  border-bottom-color: var(--pink);
+  background: var(--pink-dim);
+}
+
+.big-tab:hover:not(.active) {
+  color: var(--text-2);
+  background: rgba(255,255,255,0.02);
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.mockup-display {
+  background: #020209;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.mockup-display::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,20,100,0.1) 0%, transparent 65%);
+}
+
+.big-neon-sign {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: #FF1464;
+  letter-spacing: 0.08em;
+  text-shadow:
+    0 0 7px #FF1464,
+    0 0 15px #FF1464,
+    0 0 30px rgba(255,20,100,0.8),
+    0 0 60px rgba(255,20,100,0.4),
+    0 0 100px rgba(255,20,100,0.2);
+  animation: neon-flicker 4s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+
+.big-neon-sign.cyan {
+  color: var(--cyan);
+  text-shadow:
+    0 0 7px var(--cyan),
+    0 0 15px var(--cyan),
+    0 0 30px rgba(0,229,200,0.8),
+    0 0 60px rgba(0,229,200,0.4);
+}
+
+.sign-selector {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.sign-opt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-2);
+  color: var(--text-3);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.sign-opt.active {
+  background: var(--pink-dim);
+  border-color: rgba(255,20,100,0.3);
+  color: var(--pink);
+}
+
+.output-details {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.detail-card .d-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.detail-card .d-value {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.detail-card.amber .d-value { color: var(--amber); }
+.detail-card.green .d-value { color: #4ADE80; }
+
+/* Sketch output */
+.sketch-display {
+  background: #050505;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sketch-svg-wrap {
+  opacity: 0.75;
+  filter: brightness(1.2);
+}
+
+/* Quote output */
+.quote-display {
+  padding: 20px 16px;
+}
+
+.quote-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.quote-row:last-child { border-bottom: none; }
+.quote-row .q-label { color: var(--text-2); }
+.quote-row .q-value {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text);
+}
+
+.quote-row.total {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-2);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.quote-row.total .q-value {
+  color: var(--amber);
+  font-size: 1.1rem;
+}
+
+/* ─── Features Grid ───────────────────────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 56px;
+}
+
+.feature-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--pink), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.feature-card:hover { border-color: var(--border-2); transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.feature-card:hover::before { opacity: 1; }
+
+.feature-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+  background: var(--pink-dim);
+  border: 1px solid rgba(255,20,100,0.2);
+}
+
+.feature-icon.cyan { background: var(--cyan-dim); border-color: rgba(0,229,200,0.2); }
+.feature-icon.amber { background: var(--amber-dim); border-color: rgba(255,180,0,0.2); }
+
+.feature-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+.feature-card p {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+/* ─── How It Works ────────────────────────────────────────────── */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-top: 56px;
+  position: relative;
+}
+
+.steps-grid::before {
+  content: '';
+  position: absolute;
+  top: 28px; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-2), var(--border-2), transparent);
+}
+
+.step-item {
+  text-align: center;
+  padding: 0 24px;
+  position: relative;
+}
+
+.step-num {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border-2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--pink);
+  margin: 0 auto 20px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.step-item:hover .step-num {
+  background: var(--pink-dim);
+  border-color: rgba(232,23,93,0.3);
+  box-shadow: 0 4px 16px rgba(232,23,93,0.18);
+}
+
+.step-item h4 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.step-item p {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+/* ─── Final CTA ───────────────────────────────────────────────── */
+.cta-section {
+  padding: 100px 0;
+  text-align: center;
+}
+
+.cta-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 80px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 500px 300px at 50% 0%, rgba(232,23,93,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 400px at 80% 100%, rgba(8,145,178,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.cta-inner h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.cta-inner p {
+  font-size: 1rem;
+  color: var(--text-2);
+  max-width: 480px;
+  margin: 0 auto 36px;
+  line-height: 1.65;
+  position: relative;
+}
+
+.cta-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+/* ─── Footer ──────────────────────────────────────────────────── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 60px 0 40px;
+  background: var(--surface);
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 48px;
+}
+
+.footer-brand p {
+  font-size: 0.82rem;
+  color: var(--text-3);
+  line-height: 1.65;
+  margin-top: 12px;
+  max-width: 240px;
+}
+
+.footer-col h5 {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 16px;
+}
+
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+.footer-col ul li a {
+  font-size: 0.84rem;
+  color: var(--text-2);
+  transition: color 0.2s;
+}
+
+.footer-col ul li a:hover { color: var(--text); }
+
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+
+/* ─── Animations ──────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-left > * {
+  animation: fadeInUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.hero-left > *:nth-child(1) { animation-delay: 0s; }
+.hero-left > *:nth-child(2) { animation-delay: 0.08s; }
+.hero-left > *:nth-child(3) { animation-delay: 0.16s; }
+.hero-left > *:nth-child(4) { animation-delay: 0.22s; }
+.hero-left > *:nth-child(5) { animation-delay: 0.28s; }
+
+</style>
+</head>
+<body>
+
+<!-- ───────── NAVBAR ───────── -->
+<nav class="nav">
+  <div class="wrapper nav-inner">
+    <a href="#" class="nav-logo">
+      <span class="logo-dot"></span>
+      Neonizer
+    </a>
+    <div class="nav-links">
+      <a href="#">Studio</a>
+      <a href="#">Pricing</a>
+      <a href="#">API</a>
+      <a href="#">Docs</a>
+    </div>
+    <a href="#"><button class="nav-cta">Start free →</button></a>
+  </div>
+</nav>
+
+<!-- ───────── HERO ───────── -->
+<section>
+  <div class="wrapper hero">
+    <div class="hero-left">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Live measurement engine
+      </div>
+
+      <h1 class="hero-headline">
+        Turn any artwork into<br>
+        a <span class="accent">neon sign quote</span><br>
+        in 60 seconds.
+      </h1>
+
+      <p class="hero-sub">
+        Drop in a logo, sketch, or mockup. Neonizer's AI traces every tube, counts every bend, and builds a production quote — automatically. No back-and-forth. No guesswork.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#"><button class="btn-primary">Start for free →</button></a>
+        <a href="#"><button class="btn-secondary">
+          <span class="play-icon">▶</span>
+          Watch demo
+        </button></a>
+      </div>
+
+      <div class="trust-chips">
+        <div class="trust-chip">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M4.5 7l1.8 1.8 3-3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          No credit card
+        </div>
+        <div class="trust-chip">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M4.5 7l1.8 1.8 3-3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          20 free quotes / month
+        </div>
+        <div class="trust-chip">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M4.5 7l1.8 1.8 3-3.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Cancel anytime
+        </div>
+      </div>
+    </div>
+
+    <!-- App Preview Frame -->
+    <div class="app-frame">
+      <div class="frame-bar">
+        <div class="dot-r"></div>
+        <div class="dot-y"></div>
+        <div class="dot-g"></div>
+        <div class="frame-url">neonizer.app / studio</div>
+      </div>
+      <div class="frame-body">
+        <!-- Input panel -->
+        <div class="frame-input">
+          <div class="upload-zone">
+            <div class="upload-icon-wrap">↑</div>
+            <p>Drop your design</p>
+            <span>PNG · JPG · SVG · CDR</span>
+          </div>
+          <div class="instruction-box-frame">
+            <div class="instr-header">
+              <span class="instr-badge">AI Instructions</span>
+              <span class="ai-dot"></span>
+            </div>
+            <textarea class="instr-textarea" placeholder="e.g. Outdoor, warm white, wall-mounted..."></textarea>
+
+            <!-- Color + Width + BG row -->
+            <div style="display:grid; grid-template-columns:1fr 0.8fr 1fr; gap:5px; margin-bottom:7px;">
+              <!-- Color -->
+              <div style="position:relative;">
+                <span id="sm-swatch" style="position:absolute; left:7px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:50%; background:#E8175D; pointer-events:none;"></span>
+                <select onchange="updateSmSwatch(this)" style="width:100%; appearance:none; -webkit-appearance:none; background:rgba(0,0,0,0.03); border:1px solid var(--border-2); border-radius:6px; padding:5px 18px 5px 22px; color:var(--text); font-family:var(--font-body); font-size:0.6rem; font-weight:500; outline:none; cursor:pointer;">
+                  <option value="#E8175D" data-glow="rgba(232,23,93">Hot Pink</option>
+                  <option value="#FF4500" data-glow="rgba(255,69,0">Red Orange</option>
+                  <option value="#D97706" data-glow="rgba(217,119,6">Warm Amber</option>
+                  <option value="#0891B2" data-glow="rgba(8,145,178">Neon Cyan</option>
+                  <option value="#16A34A" data-glow="rgba(22,163,74">Electric Green</option>
+                  <option value="#7C3AED" data-glow="rgba(124,58,237">Ultra Violet</option>
+                  <option value="#374151" data-glow="rgba(55,65,81">Pure White</option>
+                </select>
+                <span style="position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.45rem; color:var(--text-3); pointer-events:none;">▼</span>
+              </div>
+              <!-- Width -->
+              <div style="position:relative;">
+                <input type="number" placeholder="24" min="1" max="240" style="width:100%; background:rgba(0,0,0,0.03); border:1px solid var(--border-2); border-radius:6px; padding:5px 22px 5px 8px; color:var(--text); font-family:var(--font-mono); font-size:0.62rem; font-weight:500; outline:none; -moz-appearance:textfield;" oninput="this.style.borderColor='rgba(232,23,93,0.4)'">
+                <span style="position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:0.52rem; font-weight:600; color:var(--text-3); pointer-events:none; font-family:var(--font-mono);">in</span>
+              </div>
+              <!-- BG upload -->
+              <div style="position:relative; overflow:hidden;">
+                <input type="file" accept="image/*" onchange="handleSmBgUpload(this)" style="position:absolute; inset:0; opacity:0; cursor:pointer; z-index:2; width:100%; height:100%;">
+                <div id="sm-bg-zone" style="display:flex; align-items:center; gap:5px; background:rgba(0,0,0,0.02); border:1px dashed var(--border-2); border-radius:6px; padding:5px 8px; transition:all 0.2s;">
+                  <span style="font-size:0.65rem; color:var(--cyan);">🖼</span>
+                  <span id="sm-bg-label" style="font-size:0.6rem; color:var(--text-3); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Background</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- UV checkbox -->
+            <div id="sm-uv-wrap" onclick="toggleSmUV()" style="display:flex; align-items:flex-start; gap:7px; padding:7px 9px; background:rgba(0,0,0,0.02); border:1px solid var(--border-2); border-radius:6px; cursor:pointer; margin-bottom:7px; transition:all 0.2s;">
+              <div id="sm-uv-box" style="width:13px; height:13px; border-radius:3px; border:1.5px solid var(--border-2); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; transition:all 0.18s;">
+                <span id="sm-uv-check" style="font-size:0.5rem; font-weight:900; color:#000; opacity:0; transition:opacity 0.15s; line-height:1;">✓</span>
+              </div>
+              <div>
+                <div style="font-size:0.62rem; font-weight:600; color:var(--text); line-height:1.2; margin-bottom:1px;">UV Printed Part</div>
+                <div style="font-size:0.56rem; color:var(--text-3); line-height:1.3;">Sign includes a UV-printed component</div>
+              </div>
+            </div>
+
+            <!-- UV part field (hidden until checked) -->
+            <div id="sm-uv-field" style="max-height:0; overflow:hidden; opacity:0; transition:max-height 0.3s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease; margin-bottom:0;">
+              <textarea style="width:100%; background:rgba(255,180,0,0.04); border:1px solid rgba(255,180,0,0.25); border-radius:6px; padding:6px 8px; color:var(--text); font-family:var(--font-body); font-size:0.62rem; resize:none; height:38px; outline:none; margin-bottom:7px;" placeholder="Which part? e.g. acrylic backboard…"></textarea>
+            </div>
+
+            <button class="gen-btn">Generate →</button>
+          </div>
+        </div>
+        <!-- Output panel -->
+        <div class="frame-output">
+          <div class="output-tabs-sm">
+            <button class="tab-sm active" onclick="switchTabSm(this,'mockup-out')">Mockup</button>
+            <button class="tab-sm" onclick="switchTabSm(this,'sketch-out')">Sketch</button>
+            <button class="tab-sm" onclick="switchTabSm(this,'quote-out')">Quote</button>
+          </div>
+          <div id="mockup-out" class="tab-content active">
+            <div class="neon-preview-box">
+              <span class="neon-sign-text">OPEN</span>
+            </div>
+            <div class="output-meta-sm">
+              <div class="meta-pill">
+                <span class="label">Tube length</span>
+                <span class="value">3.12 m</span>
+              </div>
+              <div class="meta-pill highlight">
+                <span class="label">Quote</span>
+                <span class="value">$184.50</span>
+              </div>
+              <div class="meta-pill">
+                <span class="label">Tolerance</span>
+                <span class="value">±4.8%</span>
+              </div>
+              <div class="meta-pill">
+                <span class="label">Tier</span>
+                <span class="value">GLASS-CUT</span>
+              </div>
+            </div>
+          </div>
+          <div id="sketch-out" class="tab-content">
+            <div class="neon-preview-box" style="background:#050505">
+              <svg width="130" height="80" viewBox="0 0 130 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.6">
+                <rect x="8" y="20" width="4" height="40" rx="2" fill="white"/>
+                <rect x="8" y="20" width="20" height="4" rx="2" fill="white"/>
+                <rect x="8" y="38" width="20" height="4" rx="2" fill="white"/>
+                <rect x="8" y="56" width="20" height="4" rx="2" fill="white"/>
+                <rect x="36" y="20" width="4" height="40" rx="2" fill="white"/>
+                <rect x="50" y="20" width="4" height="40" rx="2" fill="white"/>
+                <path d="M54 20 C54 20 68 20 68 38 C68 56 54 56 54 56" stroke="white" stroke-width="4" stroke-linecap="round" fill="none"/>
+                <rect x="76" y="20" width="4" height="40" rx="2" fill="white"/>
+                <rect x="76" y="20" width="18" height="4" rx="2" fill="white"/>
+                <rect x="90" y="20" width="4" height="40" rx="2" fill="white"/>
+                <rect x="102" y="20" width="4" height="40" rx="2" fill="white"/>
+                <path d="M106 20 L122 56" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                <path d="M106 56 L122 20" stroke="white" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="output-meta-sm">
+              <div class="meta-pill"><span class="label">Paths traced</span><span class="value">14</span></div>
+              <div class="meta-pill"><span class="label">Bends</span><span class="value">22</span></div>
+            </div>
+          </div>
+          <div id="quote-out" class="tab-content">
+            <div style="padding: 12px; font-size: 0.72rem;">
+              <div style="display:flex; justify-content:space-between; padding: 6px 0; border-bottom:1px solid var(--border); color:var(--text-2)">
+                <span>Tube length</span><span style="font-family:var(--font-mono); color:var(--text)">3.12 m</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding: 6px 0; border-bottom:1px solid var(--border); color:var(--text-2)">
+                <span>Cost / metre</span><span style="font-family:var(--font-mono); color:var(--text)">$42.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding: 6px 0; border-bottom:1px solid var(--border); color:var(--text-2)">
+                <span>Markup</span><span style="font-family:var(--font-mono); color:var(--text)">40%</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding: 8px 0; font-weight:700; color:var(--amber)">
+                <span style="color:var(--text)">Total quote</span><span style="font-family:var(--font-mono)">$184.50</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── STATS BAR ───────── -->
+<div class="stats-bar">
+  <div class="wrapper">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value">12<span>,</span>400<span>+</span></div>
+        <div class="stat-label">Signs measured</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">≤<span>5</span>%</div>
+        <div class="stat-label">Cutting tolerance</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">&lt;<span>5</span>s</div>
+        <div class="stat-label">Per measurement</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">120<span>+</span></div>
+        <div class="stat-label">Sign manufacturers</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">$1<span>.</span>2<span>M</span></div>
+        <div class="stat-label">In quotes generated</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── 3-STAGE VISUAL ───────── -->
+<section class="section">
+  <div class="wrapper">
+    <div class="stages-header">
+      <div class="section-tag">From artwork to production</div>
+      <h2 class="section-title">Three stages, one upload.</h2>
+      <p class="section-sub">Watch your customer's logo become a photoreal mockup, then a precise tube sketch, then a ready-to-send quote.</p>
+    </div>
+    <div class="stages-grid">
+      <div class="stage-card">
+        <div class="stage-visual" style="font-size:2.5rem; flex-direction:column; gap:6px;">
+          <span>🖼</span>
+          <span style="font-size:0.7rem; font-family:var(--font-mono); color:var(--text-3); letter-spacing:0.05em">customer_logo.png</span>
+        </div>
+        <div class="stage-body">
+          <div class="stage-num">01 — SOURCE</div>
+          <div class="title">Customer artwork</div>
+          <p>Whatever they sent — JPG, PNG, SVG, or CDR. Neonizer detects the format automatically.</p>
+        </div>
+      </div>
+      <div class="stage-card">
+        <div class="stage-visual neon-bg">OPEN</div>
+        <div class="stage-body">
+          <div class="stage-num">02 — MOCKUP</div>
+          <div class="title">Photoreal neon render</div>
+          <p>AI shows exactly how the finished sign will glow — the exact image your customer signs off on.</p>
+        </div>
+      </div>
+      <div class="stage-card">
+        <div class="stage-visual sketch-bg">
+          <div class="sketch-lines">
+            <svg viewBox="0 0 100 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7"/>
+              <rect x="5" y="10" width="18" height="3" rx="1.5" fill="white" opacity="0.7"/>
+              <rect x="5" y="33" width="18" height="3" rx="1.5" fill="white" opacity="0.7"/>
+              <rect x="5" y="57" width="18" height="3" rx="1.5" fill="white" opacity="0.7"/>
+              <rect x="28" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7"/>
+              <rect x="40" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7"/>
+              <path d="M43 10 C43 10 57 10 57 30 C57 50 43 50 43 50" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
+              <rect x="65" y="10" width="3" height="50" rx="1.5" fill="white" opacity="0.7"/>
+              <path d="M68 10 L83 60" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+              <path d="M68 60 L83 10" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+              <!-- dimension line -->
+              <line x1="2" y1="65" x2="88" y2="65" stroke="rgba(255,20,100,0.6)" stroke-width="0.8" stroke-dasharray="3,2"/>
+              <text x="44" y="69" fill="rgba(255,20,100,0.8)" font-size="4" font-family="monospace" text-anchor="middle">3.12 m · ±5%</text>
+            </svg>
+          </div>
+        </div>
+        <div class="stage-body">
+          <div class="stage-num">03 — MEASURED</div>
+          <div class="title">Cut-ready geometry</div>
+          <p>Every path traced, every bend counted, total length confirmed. Send straight to your bender.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── DEMO / INSTRUCTION TOOLBOX ───────── -->
+<section class="demo-section">
+  <div class="wrapper">
+    <div style="margin-bottom: 56px;">
+      <div class="section-tag">The studio</div>
+      <h2 class="section-title">Upload. Instruct. Generate.</h2>
+      <p class="section-sub">The instruction toolbox is your control room. Tell the AI exactly what you need — mounting style, glow color, weatherproofing, size — and it adapts the output.</p>
+    </div>
+
+    <div class="demo-layout">
+      <!-- Left: Upload + Instruction toolbox -->
+      <div class="big-input-panel">
+        <div>
+          <div class="panel-label">1. Upload your artwork</div>
+          <div class="big-upload">
+            <div class="big-upload-icon">↑</div>
+            <h4>Drop your sign design here</h4>
+            <p>Or click to browse your files</p>
+            <div class="format-chips">
+              <span class="fmt">PNG</span>
+              <span class="fmt">JPG</span>
+              <span class="fmt">SVG</span>
+              <span class="fmt">CDR</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel-label">2. Set your instructions</div>
+          <div class="big-instr-box">
+            <div class="big-instr-header">
+              <div class="instr-title">
+                <span>AI Instruction Toolbox</span>
+                <span class="badge">Active</span>
+              </div>
+              <div class="ai-status">
+                <span class="status-dot"></span>
+                Ready
+              </div>
+            </div>
+            <div class="big-instr-body">
+              <textarea class="big-instr-textarea" placeholder="Describe any custom requirements… e.g. 'Make it suitable for outdoor use, warm white glow, approximately 36 inches wide, wall-mounted with a black acrylic backboard.'"></textarea>
+
+              <!-- Color + Background row -->
+              <div class="toolbox-row">
+                <div class="toolbox-field">
+                  <label>Neon Color</label>
+                  <div class="color-select-wrap">
+                    <span class="color-swatch" id="color-swatch" style="background:#E8175D;"></span>
+                    <select class="color-select" id="color-select" onchange="updateSwatch(this)">
+                      <option value="#E8175D" data-glow="rgba(232,23,93">Hot Pink</option>
+                      <option value="#FF4500" data-glow="rgba(255,69,0">Red Orange</option>
+                      <option value="#D97706" data-glow="rgba(217,119,6">Warm Amber</option>
+                      <option value="#0891B2" data-glow="rgba(8,145,178">Neon Cyan</option>
+                      <option value="#16A34A" data-glow="rgba(22,163,74">Electric Green</option>
+                      <option value="#7C3AED" data-glow="rgba(124,58,237">Ultra Violet</option>
+                      <option value="#111827" data-glow="rgba(17,24,39">Pure White</option>
+                      <option value="#DB2777" data-glow="rgba(219,39,119">Soft Pink</option>
+                    </select>
+                    <span class="select-arrow">▼</span>
+                  </div>
+                </div>
+
+                <div class="toolbox-field">
+                  <label>Width (inches)</label>
+                  <div class="width-input-wrap">
+                    <input type="number" class="width-input" id="sign-width" placeholder="24" min="1" max="240">
+                    <span class="width-unit">in</span>
+                  </div>
+                </div>
+
+                <div class="toolbox-field">
+                  <label>Background Image</label>
+                  <div class="bg-upload-zone" id="bg-drop">
+                    <input type="file" accept="image/*" onchange="handleBgUpload(this)">
+                    <div class="bg-upload-icon">🖼</div>
+                    <div class="bg-upload-text">
+                      <p id="bg-label">Upload background</p>
+                      <span>PNG · JPG · WEBP</span>
+                    </div>
+                  </div>
+                  <div class="bg-file-name" id="bg-file-name">
+                    <span>✓</span>
+                    <span id="bg-file-text">—</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- UV Coating checkbox -->
+              <div class="uv-checkbox-wrap" id="uv-wrap" onclick="toggleUV()">
+                <div class="uv-checkbox">
+                  <span class="uv-check-icon">✓</span>
+                </div>
+                <div class="uv-label-wrap">
+                  <strong>Includes UV Printed Part <span class="uv-badge">UV PRINT</span></strong>
+                  <p>The sign includes a UV-printed component (e.g. printed acrylic backing, printed panel, or graphic insert). The AI will account for this part in the mockup and quote.</p>
+                </div>
+              </div>
+
+              <!-- Conditional UV part field -->
+              <div class="uv-part-field" id="uv-part-field">
+                <label class="toolbox-field" style="gap:6px; display:flex; flex-direction:column;">
+                  <span style="font-size:0.68rem; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--amber);">Which part is UV printed?</span>
+                  <div style="position:relative;">
+                    <textarea class="big-instr-textarea uv-part-textarea" id="uv-part-input" placeholder="e.g. Acrylic backboard, front panel graphic, logo insert…" style="height:60px; background:rgba(255,180,0,0.04); border:1px solid rgba(255,180,0,0.25); border-radius:8px; padding:10px 12px; margin:0; resize:none; width:100%; color:var(--text); font-size:0.82rem;"></textarea>
+                  </div>
+                </label>
+              </div>
+
+              <button class="big-gen-btn">
+                <span>✦</span> Generate mockup, sketch &amp; quote
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Outputs -->
+      <div>
+        <div class="panel-label" style="margin-bottom: 12px;">3. Your outputs</div>
+        <div class="big-output-panel">
+          <div class="big-tabs">
+            <button class="big-tab active" onclick="switchBigTab(this,'b-mockup')">✦ Neon Mockup</button>
+            <button class="big-tab" onclick="switchBigTab(this,'b-sketch')">◎ Tech Sketch</button>
+            <button class="big-tab" onclick="switchBigTab(this,'b-quote')">$ Cost Quote</button>
+          </div>
+
+          <!-- Mockup tab -->
+          <div id="b-mockup" class="tab-content active">
+            <div class="sign-selector">
+              <button class="sign-opt active" onclick="switchSign(this,'OPEN','#FF1464')">OPEN</button>
+              <button class="sign-opt" onclick="switchSign(this,'COFFEE','#FFB400')">COFFEE</button>
+              <button class="sign-opt" onclick="switchSign(this,'LOVE','#FF1464')">LOVE ♡</button>
+              <button class="sign-opt" onclick="switchSign(this,'BAR','#00E5C8')">BAR</button>
+              <button class="sign-opt" onclick="switchSign(this,'BOLT ⚡','#FFB400')">BOLT ⚡</button>
+            </div>
+            <div class="mockup-display">
+              <span class="big-neon-sign" id="neon-word">OPEN</span>
+            </div>
+            <div class="output-details">
+              <div class="detail-card">
+                <div class="d-label">Tube length</div>
+                <div class="d-value">3.12 m</div>
+              </div>
+              <div class="detail-card">
+                <div class="d-label">Tolerance</div>
+                <div class="d-value">±4.8%</div>
+              </div>
+              <div class="detail-card amber">
+                <div class="d-label">Quote</div>
+                <div class="d-value">$184.50</div>
+              </div>
+              <div class="detail-card">
+                <div class="d-label">Tier</div>
+                <div class="d-value">GLASS-CUT</div>
+              </div>
+              <div class="detail-card green">
+                <div class="d-label">Confidence</div>
+                <div class="d-value">High</div>
+              </div>
+              <div class="detail-card">
+                <div class="d-label">Sign width</div>
+                <div class="d-value">24 in</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sketch tab -->
+          <div id="b-sketch" class="tab-content">
+            <div class="sketch-display">
+              <div class="sketch-svg-wrap">
+                <svg width="320" height="120" viewBox="0 0 320 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- O -->
+                  <rect x="10" y="15" width="6" height="75" rx="3" fill="white"/>
+                  <rect x="10" y="15" width="36" height="6" rx="3" fill="white"/>
+                  <rect x="10" y="84" width="36" height="6" rx="3" fill="white"/>
+                  <rect x="40" y="15" width="6" height="75" rx="3" fill="white"/>
+                  <!-- P -->
+                  <rect x="60" y="15" width="6" height="75" rx="3" fill="white"/>
+                  <rect x="60" y="15" width="6" height="6" rx="3" fill="white"/>
+                  <path d="M66 15 C66 15 96 15 96 38 C96 61 66 61 66 61" stroke="white" stroke-width="6" stroke-linecap="round" fill="none"/>
+                  <!-- E -->
+                  <rect x="112" y="15" width="6" height="75" rx="3" fill="white"/>
+                  <rect x="112" y="15" width="36" height="6" rx="3" fill="white"/>
+                  <rect x="112" y="51" width="28" height="6" rx="3" fill="white"/>
+                  <rect x="112" y="84" width="36" height="6" rx="3" fill="white"/>
+                  <!-- N -->
+                  <rect x="164" y="15" width="6" height="75" rx="3" fill="white"/>
+                  <path d="M170 15 L200 90" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                  <rect x="200" y="15" width="6" height="75" rx="3" fill="white"/>
+                  <!-- Dimension lines -->
+                  <line x1="5" y1="108" x2="210" y2="108" stroke="rgba(255,20,100,0.5)" stroke-width="1" stroke-dasharray="4,3"/>
+                  <line x1="5" y1="103" x2="5" y2="113" stroke="rgba(255,20,100,0.5)" stroke-width="1"/>
+                  <line x1="210" y1="103" x2="210" y2="113" stroke="rgba(255,20,100,0.5)" stroke-width="1"/>
+                  <text x="107" y="118" fill="rgba(255,20,100,0.7)" font-size="8" font-family="monospace" text-anchor="middle">3.12 m · ±4.8% · GLASS-CUT</text>
+                  <!-- Bend markers -->
+                  <circle cx="40" cy="15" r="3" fill="rgba(0,229,200,0.7)"/>
+                  <circle cx="10" cy="15" r="3" fill="rgba(0,229,200,0.7)"/>
+                  <circle cx="10" cy="90" r="3" fill="rgba(0,229,200,0.7)"/>
+                  <circle cx="46" cy="90" r="3" fill="rgba(0,229,200,0.7)"/>
+                  <circle cx="66" cy="15" r="3" fill="rgba(0,229,200,0.7)"/>
+                  <circle cx="66" cy="61" r="3" fill="rgba(0,229,200,0.7)"/>
+                </svg>
+              </div>
+            </div>
+            <div class="output-details">
+              <div class="detail-card"><div class="d-label">Tube paths</div><div class="d-value">14</div></div>
+              <div class="detail-card"><div class="d-label">Bend count</div><div class="d-value">22</div></div>
+              <div class="detail-card"><div class="d-label">Straight runs</div><div class="d-value">8</div></div>
+              <div class="detail-card"><div class="d-label">Resolution</div><div class="d-value">2400 dpi</div></div>
+              <div class="detail-card green"><div class="d-label">Status</div><div class="d-value">Cut-ready</div></div>
+              <div class="detail-card"><div class="d-label">Format</div><div class="d-value">SVG / PDF</div></div>
+            </div>
+          </div>
+
+          <!-- Quote tab -->
+          <div id="b-quote" class="tab-content">
+            <div class="quote-display">
+              <div class="quote-row">
+                <span class="q-label">Tube length</span>
+                <span class="q-value">3.12 m</span>
+              </div>
+              <div class="quote-row">
+                <span class="q-label">Cost per metre</span>
+                <span class="q-value">$42.00</span>
+              </div>
+              <div class="quote-row">
+                <span class="q-label">Raw material cost</span>
+                <span class="q-value">$131.04</span>
+              </div>
+              <div class="quote-row">
+                <span class="q-label">Labour estimate</span>
+                <span class="q-value">~2.5 hrs</span>
+              </div>
+              <div class="quote-row">
+                <span class="q-label">Markup applied</span>
+                <span class="q-value">40%</span>
+              </div>
+              <div class="quote-row">
+                <span class="q-label">Outdoor surcharge</span>
+                <span class="q-value">+$18.00</span>
+              </div>
+              <div class="quote-row total">
+                <span class="q-label">Total customer quote</span>
+                <span class="q-value">$184.50</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── FEATURES ───────── -->
+<section class="section">
+  <div class="wrapper">
+    <div class="section-tag">Everything you need</div>
+    <h2 class="section-title">Built for neon shops, end to end.</h2>
+    <p class="section-sub">Neonizer isn't a single tool — it's a full production workflow. Mockup, measure, price, and deliver, all from one platform.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">✦</div>
+        <h3>AI Neon Mockup</h3>
+        <p>Drop in a flat brand logo and Neonizer renders a photoreal LED neon mockup — the exact look your customer is signing off on.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon cyan">◎</div>
+        <h3>Tube Extraction</h3>
+        <p>Centerlines pulled straight from your mockup. Every path traced, every bend counted. Send the sketch to your bender as-is.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon amber">$</div>
+        <h3>Breakeven Pricing</h3>
+        <p>Tube length × your cost per metre × your markup. Set it once, every quote uses it. Know your margin before you send anything.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⬡</div>
+        <h3>Instruction Toolbox</h3>
+        <p>Guide the AI with custom instructions and preset chips — outdoor, RGB, double-sided, wall-mount. The output adapts to your spec.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon cyan">{ }</div>
+        <h3>REST API</h3>
+        <p>One POST request. Everything you see in the dashboard, also as JSON. Bake Neonizer into your existing shop software or CRM.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon amber">⚡</div>
+        <h3>Always On, Sub-5s</h3>
+        <p>Quote a wedding sign at 11 pm. Process 200 in a morning. Same &lt;5 second speed, 24/7. No queue, no downtime.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── HOW IT WORKS ───────── -->
+<section class="section" style="padding-top:0">
+  <div class="wrapper">
+    <div style="text-align:center; margin-bottom:0;">
+      <div class="section-tag" style="justify-content:center">The process</div>
+      <h2 class="section-title">Four steps, one send.</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-item">
+        <div class="step-num">01</div>
+        <h4>Upload</h4>
+        <p>Drop in your sign image. Format is detected automatically.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">02</div>
+        <h4>Instruct</h4>
+        <p>Set your specs in the toolbox — or use the quick-select chips.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">03</div>
+        <h4>Generate</h4>
+        <p>AI traces every tube, renders the mockup, and measures geometry in under 5 seconds.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">04</div>
+        <h4>Quote</h4>
+        <p>Receive your mockup, sketch, and final quote. Send it, bend it, done.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── FINAL CTA ───────── -->
+<section class="cta-section">
+  <div class="wrapper">
+    <div class="cta-inner">
+      <h2>Quote your first sign<br>in <span style="color:var(--pink)">60 seconds.</span></h2>
+      <p>Free forever — 20 measurements every month, no credit card required. Join 120+ sign manufacturers already quoting faster.</p>
+      <div class="cta-actions">
+        <button class="btn-primary" style="font-size:1rem; padding:15px 32px;">Create your free account →</button>
+        <button class="btn-secondary">View pricing</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── FOOTER ───────── -->
+<footer class="footer">
+  <div class="wrapper">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="nav-logo">
+          <span class="logo-dot"></span>
+          Neonizer
+        </div>
+        <p>Precision tube-length measurement and instant quoting for neon sign manufacturers. Built for the shop floor.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#">Studio</a></li>
+          <li><a href="#">Quick Measure</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">API</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Resources</h5>
+        <ul>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Tutorials</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Status</a></li>
+          <li><a href="#">Terms</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Neonizer. All rights reserved.</span>
+      <span>Built for neon manufacturers.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+function updateSmSwatch(select) {
+  const opt = select.options[select.selectedIndex];
+  const swatch = document.getElementById('sm-swatch');
+  swatch.style.background = opt.value;
+  swatch.style.boxShadow = `0 0 5px ${opt.dataset.glow},0.8)`;
+}
+
+function handleSmBgUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const label = document.getElementById('sm-bg-label');
+  const zone = document.getElementById('sm-bg-zone');
+  label.textContent = file.name.length > 12 ? file.name.slice(0,10)+'…' : file.name;
+  label.style.color = 'var(--cyan)';
+  zone.style.borderColor = 'rgba(0,229,200,0.4)';
+}
+
+function toggleSmUV() {
+  const wrap = document.getElementById('sm-uv-wrap');
+  const box = document.getElementById('sm-uv-box');
+  const check = document.getElementById('sm-uv-check');
+  const field = document.getElementById('sm-uv-field');
+  const isChecked = wrap.dataset.checked === 'true';
+  wrap.dataset.checked = !isChecked;
+  if (!isChecked) {
+    box.style.background = 'var(--amber)';
+    box.style.borderColor = 'var(--amber)';
+    box.style.boxShadow = '0 0 8px rgba(255,180,0,0.4)';
+    check.style.opacity = '1';
+    wrap.style.borderColor = 'rgba(255,180,0,0.4)';
+    wrap.style.background = 'var(--amber-dim)';
+    field.style.maxHeight = '60px';
+    field.style.opacity = '1';
+    field.style.marginBottom = '7px';
+  } else {
+    box.style.background = 'transparent';
+    box.style.borderColor = 'var(--border-2)';
+    box.style.boxShadow = 'none';
+    check.style.opacity = '0';
+    wrap.style.borderColor = 'var(--border-2)';
+    wrap.style.background = 'rgba(255,255,255,0.02)';
+    field.style.maxHeight = '0';
+    field.style.opacity = '0';
+    field.style.marginBottom = '0';
+  }
+}
+
+function updateSwatch(select) {
+  const opt = select.options[select.selectedIndex];
+  const color = opt.value;
+  const glow = opt.dataset.glow;
+  const swatch = document.getElementById('color-swatch');
+  swatch.style.background = color;
+  swatch.style.boxShadow = `0 0 8px ${glow},0.8)`;
+}
+
+function handleBgUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const nameEl = document.getElementById('bg-file-name');
+  const textEl = document.getElementById('bg-file-text');
+  const labelEl = document.getElementById('bg-label');
+  textEl.textContent = file.name.length > 22 ? file.name.slice(0,20)+'…' : file.name;
+  labelEl.textContent = 'Background set ✓';
+  nameEl.classList.add('visible');
+  document.getElementById('bg-drop').style.borderColor = 'rgba(0,229,200,0.4)';
+}
+
+function toggleUV() {
+  const wrap = document.getElementById('uv-wrap');
+  const field = document.getElementById('uv-part-field');
+  const input = document.getElementById('uv-part-input');
+  wrap.classList.toggle('checked');
+  field.classList.toggle('visible');
+  if (field.classList.contains('visible')) input.focus();
+}
+
+function switchTabSm(btn, id) {
+  const parent = btn.closest('.frame-output');
+  parent.querySelectorAll('.tab-sm').forEach(t => t.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+function switchBigTab(btn, id) {
+  document.querySelectorAll('.big-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#b-mockup, #b-sketch, #b-quote').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+const colors = { 'OPEN': '#FF1464', 'COFFEE': '#FFB400', 'LOVE ♡': '#FF1464', 'BAR': '#00E5C8', 'BOLT ⚡': '#FFB400' };
+
+function switchSign(btn, word, color) {
+  document.querySelectorAll('.sign-opt').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const el = document.getElementById('neon-word');
+  el.textContent = word;
+  el.style.color = color;
+  const glow = color === '#00E5C8' ? 'rgba(0,229,200' : color === '#FFB400' ? 'rgba(255,180,0' : 'rgba(255,20,100';
+  el.style.textShadow = `0 0 7px ${color}, 0 0 15px ${color}, 0 0 30px ${glow},0.8), 0 0 60px ${glow},0.4)`;
+}
+</script>
+</body>
+</html>

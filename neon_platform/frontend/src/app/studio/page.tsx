@@ -1,48 +1,68 @@
 'use client';
-import { useEffect, useState, ChangeEvent } from 'react';
+import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { studio, MeasurementResult } from '@/lib/api';
 import NavBar from '@/components/NavBar';
+import PipelineStrip, { Phase } from '@/components/PipelineStrip';
+import TubeSkeleton from '@/components/TubeSkeleton';
+import StreamingLog from '@/components/StreamingLog';
 
+type Tab  = 'mockup' | 'sketch' | 'quote';
 type Mode = 'full' | 'bw-only';
-type CardState = '' | 'active' | 'done' | 'err';
 
-const TIER_COLOR: Record<string, string> = {
-  GLASS_CUT: '#059669',
-  QUOTE: '#0891b2',
-  ESTIMATE: '#d97706',
-  MARGINAL: '#ea580c',
-  FAIL: '#dc2626',
-  UNKNOWN: '#8a8a9a',
+const COST_PER_METRE = 10;
+const MARKUP_RATE    = 0.40;
+
+const TIER_LABELS: Record<string, string> = {
+  GLASS_CUT: 'Cut-ready',
+  QUOTE:     'Quote-grade',
+  ESTIMATE:  'Rough estimate',
+  MARGINAL:  'Needs review',
+  FAIL:      'Re-upload needed',
+  UNKNOWN:   '—',
 };
+
+const COLOR_OPTIONS = [
+  { hex: '#E8175D', glow: '232,23,93',  name: 'Hot Pink' },
+  { hex: '#FF4500', glow: '255,69,0',   name: 'Red Orange' },
+  { hex: '#D97706', glow: '217,119,6',  name: 'Warm Amber' },
+  { hex: '#0891B2', glow: '8,145,178',  name: 'Neon Cyan' },
+  { hex: '#16A34A', glow: '22,163,74',  name: 'Electric Green' },
+  { hex: '#7C3AED', glow: '124,58,237', name: 'Ultra Violet' },
+  { hex: '#111827', glow: '17,24,39',   name: 'Pure White' },
+];
 
 export default function StudioPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
 
   const [mode, setMode] = useState<Mode>('full');
+  const [tab,  setTab]  = useState<Tab>('mockup');
 
-  const [logo, setLogo] = useState<File | null>(null);
-  const [bg, setBg] = useState<File | null>(null);
+  // Inputs
+  const [logo, setLogo]             = useState<File | null>(null);
+  const [bg,   setBg]               = useState<File | null>(null);
   const [mockupFile, setMockupFile] = useState<File | null>(null);
-  const [extra, setExtra] = useState('');
-  const [extraBw, setExtraBw] = useState('');
-  const [uvNeon, setUvNeon] = useState(false);
-  const [width, setWidth] = useState('24');
-  const [gt, setGt] = useState('');
+  const [extra, setExtra]           = useState('');
+  const [neonColor, setNeonColor]   = useState(COLOR_OPTIONS[0]);
+  const [width, setWidth]           = useState('24');
+  const [uvNeon, setUvNeon]         = useState(false);
+  const [uvPart, setUvPart]         = useState('');
+  const [gt, setGt]                 = useState('');
 
-  const [mockupB64, setMockupB64] = useState<string | null>(null);
-  const [bwB64, setBwB64] = useState<string | null>(null);
+  // Outputs
+  const [mockupB64, setMockupB64]     = useState<string | null>(null);
+  const [bwB64, setBwB64]             = useState<string | null>(null);
   const [measurement, setMeasurement] = useState<MeasurementResult | null>(null);
 
-  const [c1State, setC1State] = useState<CardState>('active');
-  const [c2State, setC2State] = useState<CardState>('');
-  const [c3State, setC3State] = useState<CardState>('');
-
-  const [busy, setBusy] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('');
-  const [error, setError] = useState('');
+  // Pipeline state
+  const [busy,  setBusy]   = useState(false);
+  const [phase, setPhase]  = useState<Phase>('idle');
+  const [error, setError]  = useState('');
+  const phaseTimers  = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const phaseTimings = useRef<Partial<Record<Exclude<Phase, 'idle' | 'done' | 'error'>, number>>>({});
+  const phaseStarts  = useRef<Partial<Record<Exclude<Phase, 'idle' | 'done' | 'error'>, number>>>({});
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -50,21 +70,14 @@ export default function StudioPage() {
 
   if (loading || !user) return null;
 
-  const inputPreview = (() => {
-    if (mode === 'full' && logo) return URL.createObjectURL(logo);
-    if (mode === 'bw-only' && mockupFile) return URL.createObjectURL(mockupFile);
-    return null;
-  })();
-
   const reset = () => {
     setMockupB64(null);
     setBwB64(null);
     setMeasurement(null);
-    setC1State('active');
-    setC2State('');
-    setC3State('');
     setError('');
-    setStatusMsg('');
+    setPhase('idle');
+    setTab('mockup');
+    stopPhases();
   };
 
   const onLogo = (e: ChangeEvent<HTMLInputElement>) => {
@@ -75,100 +88,84 @@ export default function StudioPage() {
     const f = e.target.files?.[0];
     if (f) { setMockupFile(f); reset(); }
   };
-  const onBg = (e: ChangeEvent<HTMLInputElement>) => {
-    setBg(e.target.files?.[0] ?? null);
-  };
 
   const UV_INSTRUCTION =
     "leverage all your reasoning to intelligently find out where UV printing is present in the design and don't ever craft that portion with LED neon tube but simply keep it dull and with no glow at all.";
-
-  const uvText = () => uvNeon ? UV_INSTRUCTION : '';
+  const uvText = () => uvNeon ? (uvPart ? `${UV_INSTRUCTION} The UV-printed part is: ${uvPart}.` : UV_INSTRUCTION) : '';
 
   const widthNum = () => {
     const w = parseFloat(width);
     return !w || w <= 0 ? null : w;
   };
 
-  const runStep1 = async () => {
-    if (!logo) { setError('Please upload a logo first.'); return; }
-    setBwB64(null); setMeasurement(null);
-    setC3State('');
-    setBusy(true); setError(''); setStatusMsg('Phase 1 — generating photoreal neon mockup…');
-    setC2State('active');
-    try {
-      const fd = new FormData();
-      fd.append('logo', logo);
-      if (bg) fd.append('background', bg);
-      if (extra.trim()) fd.append('additional', extra.trim());
-      if (uvText()) fd.append('uv', uvText());
-      const r = await studio.generateMockup(fd);
-      setMockupB64(r.image_b64);
-      setC1State('done'); setC2State('done');
-      setStatusMsg('Mockup ready. Convert to a black-and-white sketch next.');
-    } catch (e: unknown) {
-      setC2State('err');
-      setError(e instanceof Error ? e.message : 'Mockup generation failed');
-    } finally { setBusy(false); }
+  const composedExtra = () => {
+    const parts: string[] = [];
+    if (extra.trim()) parts.push(extra.trim());
+    parts.push(`Preferred neon color: ${neonColor.name} (${neonColor.hex}).`);
+    return parts.join(' ');
   };
 
-  const runStep2 = async () => {
-    if (!mockupB64) { setError('Generate the mockup first.'); return; }
-    setMeasurement(null);
-    setBusy(true); setError(''); setStatusMsg('Phase 2 — extracting tube centerlines…');
-    setC3State('active');
-    try {
-      const blob = b64ToBlob(mockupB64, 'image/png');
-      const fd = new FormData();
-      fd.append('mockup', blob, 'mockup.png');
-      if (extraBw.trim()) fd.append('additional', extraBw.trim());
-      if (uvText()) fd.append('uv', uvText());
-      const r = await studio.generateBw(fd);
-      setBwB64(r.image_b64);
-      setC3State('');
-      setStatusMsg('Sketch ready. Click Measure LOC to get the tube length.');
-    } catch (e: unknown) {
-      setC3State('err');
-      setError(e instanceof Error ? e.message : 'B&W conversion failed');
-    } finally { setBusy(false); }
+  const stopPhases = () => {
+    phaseTimers.current.forEach(clearTimeout);
+    phaseTimers.current = [];
   };
 
-  const runStep3 = async () => {
-    if (!bwB64) { setError('Generate the B&W sketch first.'); return; }
-    const w = widthNum();
-    if (!w) { setError('Enter a valid sign width (inches).'); return; }
-    setMeasurement(null);
-    setC3State('active');
-    setBusy(true); setError(''); setStatusMsg('Phase 3 — running LOC measurement pipeline…');
-    try {
-      const blob = b64ToBlob(bwB64, 'image/png');
-      const fd = new FormData();
-      fd.append('image', blob, 'bw_sketch.png');
-      fd.append('width_inches', String(w));
-      fd.append('force_format', 'bw');
-      if (gt) fd.append('ground_truth_m', gt);
-      const r = await studio.measure(fd);
-      setMeasurement(r);
-      setC3State('done');
-      setStatusMsg('Pipeline complete.');
-    } catch (e: unknown) {
-      setC3State('err');
-      setError(e instanceof Error ? e.message : 'Measurement failed');
-    } finally { setBusy(false); }
+  const advancePhase = (p: Exclude<Phase, 'idle' | 'done' | 'error'>) => {
+    const now = Date.now();
+    setPhase(prev => {
+      if (prev !== 'idle' && prev !== 'done' && prev !== 'error') {
+        const start = phaseStarts.current[prev];
+        if (start != null) phaseTimings.current[prev] = now - start;
+      }
+      phaseStarts.current[p] = now;
+      return p;
+    });
+  };
+
+  const startPhases = (kind: 'full' | 'bw') => {
+    stopPhases();
+    phaseTimings.current = {};
+    phaseStarts.current  = {};
+    if (kind === 'full') {
+      advancePhase('drawing');
+      phaseTimers.current.push(setTimeout(() => advancePhase('tracing'), 4500));
+      phaseTimers.current.push(setTimeout(() => advancePhase('pricing'), 7200));
+    } else {
+      advancePhase('drawing');
+      phaseTimers.current.push(setTimeout(() => advancePhase('tracing'), 700));
+      phaseTimers.current.push(setTimeout(() => advancePhase('pricing'), 2600));
+    }
+  };
+
+  const finishPhases = () => {
+    stopPhases();
+    const now = Date.now();
+    setPhase(prev => {
+      if (prev !== 'idle' && prev !== 'done' && prev !== 'error') {
+        const start = phaseStarts.current[prev];
+        if (start != null) phaseTimings.current[prev] = now - start;
+      }
+      return 'done';
+    });
+  };
+
+  const failPhases = () => {
+    stopPhases();
+    setPhase('error');
   };
 
   const runFullPipeline = async () => {
-    if (!logo) { setError('Please upload a logo first.'); return; }
+    if (!logo) { setError('Upload a sign design first.'); return; }
     const w = widthNum();
-    if (!w) { setError('Enter a valid sign width (inches).'); return; }
+    if (!w) { setError('Enter a valid sign width (in inches).'); return; }
     setMockupB64(null); setBwB64(null); setMeasurement(null);
-    setBusy(true); setError(''); setStatusMsg('Running the full pipeline (30–90s)…');
-    setC1State('active'); setC2State('active'); setC3State('active');
+    setBusy(true); setError('');
+    startPhases('full');
     try {
       const fd = new FormData();
       fd.append('logo', logo);
       if (bg) fd.append('background', bg);
-      if (extra.trim()) fd.append('additional', extra.trim());
-      if (extraBw.trim()) fd.append('additional_bw', extraBw.trim());
+      if (composedExtra()) fd.append('additional', composedExtra());
       if (uvText()) fd.append('uv', uvText());
       fd.append('width_inches', String(w));
       if (gt) fd.append('ground_truth_m', gt);
@@ -176,509 +173,665 @@ export default function StudioPage() {
       setMockupB64(r.mockup_b64);
       setBwB64(r.bw_b64);
       setMeasurement(r.measurement);
-      setC1State('done'); setC2State('done'); setC3State('done');
-      setStatusMsg('Full pipeline complete.');
+      finishPhases();
+      setTab('mockup');
     } catch (e: unknown) {
-      setC2State('err'); setC3State('err');
-      setError(e instanceof Error ? e.message : 'Full pipeline failed');
-    } finally { setBusy(false); }
+      failPhases();
+      setError(e instanceof Error ? e.message : 'Pipeline failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const runBwOnly = async () => {
-    if (!mockupFile) { setError('Please upload a colored mockup first.'); return; }
+    if (!mockupFile) { setError('Upload a colored mockup first.'); return; }
     const w = widthNum();
-    if (!w) { setError('Enter a valid sign width (inches).'); return; }
+    if (!w) { setError('Enter a valid sign width (in inches).'); return; }
     setBwB64(null); setMeasurement(null);
-    setBusy(true); setError(''); setStatusMsg('Running B&W pipeline (20–60s)…');
-    setC1State('active'); setC3State('active');
+    setBusy(true); setError('');
+    startPhases('bw');
     try {
       const fd = new FormData();
       fd.append('mockup', mockupFile);
-      if (extra.trim()) fd.append('additional', extra.trim());
+      if (composedExtra()) fd.append('additional', composedExtra());
       if (uvText()) fd.append('uv', uvText());
       fd.append('width_inches', String(w));
       if (gt) fd.append('ground_truth_m', gt);
       const r = await studio.bwOnlyPipeline(fd);
       setBwB64(r.bw_b64);
       setMeasurement(r.measurement);
-      setC1State('done'); setC3State('done');
-      setStatusMsg('B&W pipeline complete.');
+      finishPhases();
+      setTab('sketch');
     } catch (e: unknown) {
-      setC3State('err');
-      setError(e instanceof Error ? e.message : 'B&W pipeline failed');
-    } finally { setBusy(false); }
+      failPhases();
+      setError(e instanceof Error ? e.message : 'Pipeline failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  return (
-    <div style={{ minHeight: '100vh' }}>
-      <NavBar />
-      <div style={{ maxWidth: '1380px', margin: '0 auto', padding: '2.5rem 2rem 4rem' }}>
+  const inputPreview = (() => {
+    if (mode === 'full' && logo) return URL.createObjectURL(logo);
+    if (mode === 'bw-only' && mockupFile) return URL.createObjectURL(mockupFile);
+    return null;
+  })();
 
-        {/* Page header */}
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{
-            fontFamily: 'Space Mono, monospace', fontSize: '0.7rem',
-            color: 'var(--pink)', letterSpacing: '0.18em', textTransform: 'uppercase',
-            marginBottom: '0.5rem',
-          }}>
-            Neon Sign Studio
-          </div>
-          <h1 style={{
-            fontFamily: 'Bebas Neue, sans-serif',
-            fontSize: 'clamp(2.4rem, 4vw, 3.4rem)',
-            letterSpacing: '0.03em', lineHeight: 1.05,
-            marginBottom: '0.6rem',
-          }}>
-            Logo to <span className="neon-pink">cut-ready quote</span>, in three steps.
-          </h1>
-          <p style={{ color: 'var(--text-dim)', fontSize: '1rem', maxWidth: 640, lineHeight: 1.6 }}>
+  return (
+    <div>
+      <NavBar />
+
+      <main className="wrapper" style={{ padding: '40px 32px 80px' }}>
+        {/* Header */}
+        <div style={{ marginBottom: 24 }}>
+          <div className="section-tag">The studio</div>
+          <h1 className="section-title">Upload. Instruct. Generate.</h1>
+          <p className="section-sub">
             {mode === 'full'
-              ? 'Upload a logo. Neonizer renders a photoreal mockup, extracts the tube paths, and measures the tube length for quoting.'
-              : 'Upload a colored mockup. Neonizer extracts the tube paths and measures the tube length for quoting.'}
+              ? 'Drop your customer’s logo. Set your specs. Neonizer renders the mockup, traces the tubes, and prices it out.'
+              : 'Drop your colored mockup. Neonizer extracts the cut sheet and prices it out.'}
           </p>
         </div>
 
         {/* Mode toggle */}
         <div style={{
-          display: 'inline-flex', background: '#fff', border: '1px solid var(--border)',
-          borderRadius: 999, padding: 4, marginBottom: '1.75rem',
+          display: 'inline-flex',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 999,
+          padding: 4,
+          marginBottom: 28,
         }}>
-          <button
-            onClick={() => { setMode('full'); reset(); }}
-            style={modeBtn(mode === 'full')}
-          >Full pipeline</button>
-          <button
-            onClick={() => { setMode('bw-only'); reset(); }}
-            style={modeBtn(mode === 'bw-only')}
-          >B&amp;W from mockup</button>
+          <ModeBtn active={mode === 'full'}    onClick={() => { setMode('full');    reset(); }}>Full pipeline</ModeBtn>
+          <ModeBtn active={mode === 'bw-only'} onClick={() => { setMode('bw-only'); reset(); }}>Sketch &amp; quote only</ModeBtn>
         </div>
 
-        {/* 3-card grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: mode === 'bw-only' ? '1fr 1fr' : '1fr 1fr 1fr',
-          gap: '1rem',
-          marginBottom: '1.5rem',
-        }}>
-          {/* Card 1 — Input */}
-          <Card num={1} title={mode === 'full' ? 'Design input' : 'Mockup input'}
-                sub={mode === 'full' ? 'Upload logo & optional background' : 'Upload a colored mockup'}
-                state={c1State}>
-            {mode === 'full' ? (
-              <>
-                <Label required>Logo / design image</Label>
-                <input type="file" accept=".png,.jpg,.jpeg,.webp,.bmp" onChange={onLogo}
-                       className="input-neon" style={{ padding: '0.45rem', cursor: 'pointer', fontSize: '0.78rem' }} />
-                <Label optional>Background environment</Label>
-                <input type="file" accept=".png,.jpg,.jpeg,.webp,.bmp" onChange={onBg}
-                       className="input-neon" style={{ padding: '0.45rem', cursor: 'pointer', fontSize: '0.78rem' }} />
-              </>
-            ) : (
-              <>
-                <Label required>Colored mockup image</Label>
-                <input type="file" accept=".png,.jpg,.jpeg,.webp,.bmp" onChange={onMockupFile}
-                       className="input-neon" style={{ padding: '0.45rem', cursor: 'pointer', fontSize: '0.78rem' }} />
-              </>
-            )}
-            <Label optional>Additional instructions</Label>
-            <textarea
-              value={extra} onChange={e => setExtra(e.target.value)}
-              placeholder="e.g. electric blue lettering, neon flex tube only…"
-              className="input-neon"
-              style={{ minHeight: 56, resize: 'vertical', fontSize: '0.78rem' }}
-            />
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              marginTop: '0.7rem', cursor: 'pointer', userSelect: 'none',
-            }}>
-              <input
-                type="checkbox" checked={uvNeon}
-                onChange={e => setUvNeon(e.target.checked)}
-                style={{ accentColor: 'var(--pink)', width: 14, height: 14, cursor: 'pointer' }}
-              />
-              <span style={{
-                fontSize: '0.72rem',
-                color: uvNeon ? 'var(--pink)' : 'var(--text-muted)',
-                textTransform: 'uppercase', letterSpacing: '0.08em',
-                fontWeight: uvNeon ? 700 : 500,
-                transition: 'color 0.15s',
-              }}>
-                UV neon sign
-              </span>
-              {uvNeon && (
-                <span style={{
-                  fontSize: '0.6rem', color: 'var(--pink-deep)',
-                  background: 'var(--pink-soft)', border: '1px solid var(--pink)',
-                  padding: '1px 6px', borderRadius: 3,
-                }}>UV skip injected</span>
-              )}
-            </label>
-            <Preview src={inputPreview} placeholder="Input preview appears here" />
-          </Card>
+        {/* Demo layout — same structure as landing's demo-section */}
+        <div className="demo-layout">
+          {/* LEFT — input + toolbox */}
+          <div className="big-input-panel">
+            <div>
+              <div className="panel-label">1. Upload your {mode === 'full' ? 'artwork' : 'mockup'}</div>
+              <label className="big-upload" style={{ display: 'block', position: 'relative' }}>
+                <input
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.webp,.bmp"
+                  onChange={mode === 'full' ? onLogo : onMockupFile}
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                />
+                {inputPreview ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={inputPreview} alt="preview" style={{
+                      maxWidth: '100%',
+                      maxHeight: 200,
+                      objectFit: 'contain',
+                      margin: '0 auto',
+                      borderRadius: 6,
+                    }} />
+                    <p style={{ marginTop: 12, fontSize: '0.78rem', color: 'var(--text-3)' }}>
+                      Click to replace
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="big-upload-icon">↑</div>
+                    <h4>Drop your {mode === 'full' ? 'sign design' : 'colored mockup'} here</h4>
+                    <p>Or click to browse your files</p>
+                    <div className="format-chips">
+                      <span className="fmt">PNG</span>
+                      <span className="fmt">JPG</span>
+                      <span className="fmt">WEBP</span>
+                      <span className="fmt">BMP</span>
+                    </div>
+                  </>
+                )}
+              </label>
+            </div>
 
-          {/* Card 2 — Mockup (full mode only) */}
-          {mode === 'full' && (
-            <Card num={2} title="Photoreal mockup" sub="Gemini renders the LED neon sign" state={c2State}>
-              <Preview b64={mockupB64} placeholder="Run step 1 to generate the mockup"
-                       loading={busy && c2State === 'active' && !mockupB64} />
-              {mockupB64 && (
-                <a href={`data:image/png;base64,${mockupB64}`} download="neon_mockup.png" style={dlStyle}>
-                  ↓ Download mockup
-                </a>
-              )}
-              <Label optional>Additional instructions (sketch phase)</Label>
-              <textarea
-                value={extraBw} onChange={e => setExtraBw(e.target.value)}
-                placeholder="e.g. preserve fine bat-wing detail; remove circle backer ridge…"
-                className="input-neon"
-                style={{ minHeight: 56, resize: 'vertical', fontSize: '0.78rem' }}
-              />
-              <button
-                className="btn-ghost"
-                style={{ padding: '0.55rem 0.95rem', fontSize: '0.78rem', marginTop: '0.7rem' }}
-                disabled={!mockupB64 || busy}
-                onClick={runStep2}
-              >
-                Convert to sketch →
-              </button>
-            </Card>
-          )}
+            <div>
+              <div className="panel-label">2. Set your instructions</div>
+              <div className="big-instr-box">
+                <div className="big-instr-header">
+                  <div className="instr-title">
+                    <span>AI Instruction Toolbox</span>
+                    <span className="badge" style={{
+                      color: 'var(--cyan)', background: 'var(--cyan-dim)',
+                      border: '1px solid rgba(8,145,178,0.2)',
+                      fontSize: '0.6rem', fontWeight: 700,
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      padding: '2px 8px', borderRadius: 4,
+                    }}>Active</span>
+                  </div>
+                  <div className="ai-status">
+                    <span className="status-dot" />
+                    {busy ? 'Working' : 'Ready'}
+                  </div>
+                </div>
 
-          {/* Card 3 — Sketch + measurement */}
-          <Card num={mode === 'full' ? 3 : 2} title="Tube sketch & length"
-                sub="Centerlines extracted, then measured" state={c3State}>
-            <Preview b64={bwB64} placeholder="Run the previous step to generate the sketch"
-                     loading={busy && c3State === 'active' && !bwB64} />
-            {bwB64 && (
-              <a href={`data:image/png;base64,${bwB64}`} download="neon_bw_sketch.png" style={dlStyle}>
-                ↓ Download sketch
-              </a>
-            )}
-            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '0.95rem 0' }} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-              <div>
-                <Label required>Width (inches)</Label>
-                <input type="number" step="0.5" min="1" value={width}
-                       onChange={e => setWidth(e.target.value)}
-                       className="input-neon" style={{ fontSize: '0.78rem' }} />
-              </div>
-              <div>
-                <Label optional>GT length (m)</Label>
-                <input type="number" step="0.01" value={gt}
-                       onChange={e => setGt(e.target.value)} placeholder="optional"
-                       className="input-neon" style={{ fontSize: '0.78rem' }} />
+                <div className="big-instr-body">
+                  <textarea
+                    className="big-instr-textarea"
+                    value={extra}
+                    onChange={e => setExtra(e.target.value)}
+                    placeholder="Describe any custom requirements… e.g. 'Make it suitable for outdoor use, warm white glow, approximately 36 inches wide, wall-mounted with a black acrylic backboard.'"
+                  />
+
+                  <div className="toolbox-row">
+                    <div className="toolbox-field">
+                      <label>Neon Color</label>
+                      <div className="color-select-wrap">
+                        <span className="color-swatch" style={{
+                          background: neonColor.hex,
+                          boxShadow: `0 0 8px rgba(${neonColor.glow},0.7)`,
+                        }} />
+                        <select
+                          className="color-select"
+                          value={neonColor.hex}
+                          onChange={e => {
+                            const c = COLOR_OPTIONS.find(c => c.hex === e.target.value);
+                            if (c) setNeonColor(c);
+                          }}
+                        >
+                          {COLOR_OPTIONS.map(c => <option key={c.hex} value={c.hex}>{c.name}</option>)}
+                        </select>
+                        <span className="select-arrow">▼</span>
+                      </div>
+                    </div>
+
+                    <div className="toolbox-field">
+                      <label>Width (inches)</label>
+                      <div className="width-input-wrap">
+                        <input
+                          type="number" min={1} max={240} placeholder="24"
+                          className="width-input"
+                          value={width}
+                          onChange={e => setWidth(e.target.value)}
+                        />
+                        <span className="width-unit">in</span>
+                      </div>
+                    </div>
+
+                    {mode === 'full' ? (
+                      <div className="toolbox-field">
+                        <label>Background Image</label>
+                        <div className="bg-upload-zone" style={{
+                          borderColor: bg ? 'rgba(0,229,200,0.4)' : undefined,
+                        }}>
+                          <input
+                            type="file" accept="image/*"
+                            onChange={e => setBg(e.target.files?.[0] ?? null)}
+                          />
+                          <div className="bg-upload-icon">🖼</div>
+                          <div className="bg-upload-text">
+                            <p>{bg ? 'Background set ✓' : 'Upload background'}</p>
+                            <span>PNG · JPG · WEBP</span>
+                          </div>
+                        </div>
+                        {bg && (
+                          <div className="bg-file-name visible">
+                            <span>✓</span>
+                            <span>{bg.name.length > 22 ? bg.name.slice(0, 20) + '…' : bg.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="toolbox-field">
+                        <label>Known length (m)</label>
+                        <div className="width-input-wrap">
+                          <input
+                            type="number" step="0.01" placeholder="optional"
+                            className="width-input"
+                            value={gt}
+                            onChange={e => setGt(e.target.value)}
+                          />
+                          <span className="width-unit">m</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* UV checkbox */}
+                  <div
+                    className={`uv-checkbox-wrap ${uvNeon ? 'checked' : ''}`}
+                    onClick={() => setUvNeon(!uvNeon)}
+                  >
+                    <div className="uv-checkbox">
+                      <span className="uv-check-icon">✓</span>
+                    </div>
+                    <div className="uv-label-wrap">
+                      <strong>
+                        Includes UV Printed Part <span className="uv-badge">UV PRINT</span>
+                      </strong>
+                      <p>The sign includes a UV-printed component (e.g. printed acrylic backing, printed panel, or graphic insert). The AI will account for this part in the mockup and quote.</p>
+                    </div>
+                  </div>
+
+                  <div className={`uv-part-field ${uvNeon ? 'visible' : ''}`}>
+                    <label className="toolbox-field" style={{ gap: 6, display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--amber)' }}>
+                        Which part is UV printed?
+                      </span>
+                      <textarea
+                        value={uvPart}
+                        onChange={e => setUvPart(e.target.value)}
+                        placeholder="e.g. Acrylic backboard, front panel graphic, logo insert…"
+                        style={{
+                          height: 60,
+                          background: 'rgba(255,180,0,0.04)',
+                          border: '1px solid rgba(255,180,0,0.25)',
+                          borderRadius: 8, padding: '10px 12px',
+                          margin: 0, resize: 'none', width: '100%',
+                          color: 'var(--text)', fontFamily: 'var(--font-body)',
+                          fontSize: '0.82rem', outline: 'none',
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <button
+                    className="big-gen-btn"
+                    onClick={mode === 'full' ? runFullPipeline : runBwOnly}
+                    disabled={busy || (mode === 'full' ? !logo : !mockupFile)}
+                  >
+                    {busy ? <span className="status-pulse">Working…</span> : <><span>✦</span> Generate mockup, sketch &amp; quote</>}
+                  </button>
+
+                  {error && (
+                    <div style={{
+                      marginTop: 12, padding: '10px 13px',
+                      background: 'var(--red-dim)',
+                      border: '1px solid rgba(220,38,38,0.3)',
+                      borderRadius: 8,
+                      color: 'var(--red)',
+                      fontSize: '0.82rem',
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
+                    }}>
+                      <span>!</span><span>{error}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <button
-              className="btn-ghost"
-              style={{ padding: '0.55rem 0.95rem', fontSize: '0.78rem', marginTop: '0.7rem' }}
-              disabled={!bwB64 || busy}
-              onClick={runStep3}
-            >
-              Measure LOC →
-            </button>
-          </Card>
-        </div>
-
-        {/* Action row */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          {mode === 'full' ? (
-            <>
-              <button className="btn-neon" disabled={busy || !logo}
-                      onClick={runFullPipeline} style={{ padding: '0.85rem 1.5rem' }}>
-                {busy ? 'Running…' : 'Run full pipeline →'}
-              </button>
-              <button className="btn-ghost" disabled={busy || !logo}
-                      onClick={runStep1} style={{ padding: '0.6rem 1.1rem', fontSize: '0.82rem' }}>
-                Step 1 — Generate mockup
-              </button>
-            </>
-          ) : (
-            <button className="btn-neon" disabled={busy || !mockupFile}
-                    onClick={runBwOnly} style={{ padding: '0.85rem 1.5rem' }}>
-              {busy ? 'Running…' : 'Convert & measure →'}
-            </button>
-          )}
-          {statusMsg && (
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}
-                  className={busy ? 'status-pulse' : ''}>
-              {statusMsg}
-            </span>
-          )}
-        </div>
-
-        {error && (
-          <div style={{
-            marginTop: '1rem',
-            padding: '0.75rem 1rem',
-            background: '#fef2f2',
-            border: '1px solid var(--red)',
-            borderRadius: 6,
-            color: 'var(--red)',
-            fontSize: '0.85rem',
-            whiteSpace: 'pre-wrap',
-          }}>
-            ⚠ {error}
           </div>
-        )}
 
-        {measurement && <Results m={measurement} />}
-      </div>
-    </div>
-  );
-}
+          {/* RIGHT — outputs */}
+          <div>
+            <div className="panel-label" style={{ marginBottom: 12 }}>3. Your outputs</div>
+            <div className="big-output-panel">
+              {phase !== 'idle' && (
+                <PipelineStrip phase={phase} timings={phaseTimings.current} />
+              )}
 
-/* ── COMPONENTS ─────────────────────────────────────────────────────── */
+              <div className="big-tabs">
+                <button
+                  className={`big-tab ${tab === 'mockup' ? 'active' : ''}`}
+                  onClick={() => setTab('mockup')}
+                  disabled={mode === 'bw-only'}
+                >
+                  ✦ Neon Mockup
+                </button>
+                <button
+                  className={`big-tab ${tab === 'sketch' ? 'active' : ''}`}
+                  onClick={() => setTab('sketch')}
+                >
+                  ◎ Tech Sketch
+                </button>
+                <button
+                  className={`big-tab ${tab === 'quote' ? 'active' : ''}`}
+                  onClick={() => setTab('quote')}
+                >
+                  $ Cost Quote
+                </button>
+              </div>
 
-function Card({ num, title, sub, state, children }: {
-  num: number; title: string; sub: string; state: CardState; children: React.ReactNode;
-}) {
-  const border =
-    state === 'active' ? 'var(--pink)' :
-    state === 'done'   ? 'var(--green)' :
-    state === 'err'    ? 'var(--red)'   :
-    'var(--border)';
-  const bgRing =
-    state === 'active' ? 'var(--pink-soft)' :
-    state === 'done'   ? '#ecfdf5' :
-    state === 'err'    ? '#fef2f2' :
-    'transparent';
-  const numBg =
-    state === 'active' ? 'var(--pink)' :
-    state === 'done'   ? 'var(--green)' :
-    state === 'err'    ? 'var(--red)' :
-    'var(--bg-2)';
-  const numColor = state ? '#fff' : 'var(--text-muted)';
+              {tab === 'mockup' && (
+                <MockupTab
+                  b64={mockupB64}
+                  loading={busy && (phase === 'drawing' || phase === 'tracing')}
+                  measurement={measurement}
+                  width={width}
+                  mode={mode}
+                />
+              )}
+              {tab === 'sketch' && (
+                <SketchTab
+                  b64={bwB64}
+                  loading={busy && phase === 'tracing'}
+                  measurement={measurement}
+                />
+              )}
+              {tab === 'quote' && (
+                <QuoteTab
+                  measurement={measurement}
+                  loading={busy}
+                  uvNeon={uvNeon}
+                />
+              )}
 
-  return (
-    <div style={{
-      background: '#fff',
-      border: `1px solid ${border}`,
-      borderRadius: 12,
-      padding: '1.25rem',
-      boxShadow: state === 'active' ? `0 0 0 3px ${bgRing}` : 'var(--shadow-sm)',
-      transition: 'all 0.2s',
-    }}>
-      <div style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: 28, height: 28, borderRadius: '50%',
-        background: numBg, color: numColor,
-        fontFamily: 'Space Mono, monospace', fontWeight: 700, fontSize: '0.75rem',
-        marginBottom: '0.7rem',
-      }}>{num}</div>
-      <div style={{
-        fontSize: '0.62rem', color: 'var(--text-muted)',
-        textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '0.2rem',
-      }}>{title}</div>
-      <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: '0.85rem' }}>{sub}</div>
-      {children}
-    </div>
-  );
-}
-
-function Label({ required, optional, children }: {
-  required?: boolean; optional?: boolean; children?: React.ReactNode;
-}) {
-  return (
-    <label style={{
-      display: 'block', fontSize: '0.66rem', color: 'var(--text-muted)',
-      textTransform: 'uppercase', letterSpacing: '0.08em',
-      margin: '0.6rem 0 0.3rem',
-    }}>
-      {children}
-      {required && <span style={{ color: 'var(--red)', marginLeft: 3 }}>*</span>}
-      {optional && (
-        <span style={{
-          marginLeft: 5, fontSize: '0.6rem', color: 'var(--text-muted)',
-          background: 'var(--bg-1)', border: '1px solid var(--border)',
-          padding: '1px 5px', borderRadius: 3, textTransform: 'lowercase',
-          letterSpacing: 'normal',
-        }}>optional</span>
-      )}
-    </label>
-  );
-}
-
-function Preview({ src, b64, placeholder, loading }: {
-  src?: string | null; b64?: string | null; placeholder: string; loading?: boolean;
-}) {
-  const url = b64 ? `data:image/png;base64,${b64}` : src;
-  return (
-    <div style={{
-      width: '100%', minHeight: 130, background: 'var(--bg-1)',
-      border: '1px dashed var(--border-md)', borderRadius: 6,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      overflow: 'hidden', position: 'relative', marginTop: '0.6rem',
-    }}>
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="preview" style={{ maxWidth: '100%', maxHeight: 260, objectFit: 'contain' }} />
-      ) : (
-        <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textAlign: 'center', padding: '1rem' }}>
-          {placeholder}
+              <StreamingLog
+                active={busy}
+                done={phase === 'done'}
+                mode={mode === 'bw-only' ? 'bw' : 'full'}
+                error={phase === 'error' ? error : null}
+              />
+            </div>
+          </div>
         </div>
-      )}
-      {loading && (
+
+        {/* Detailed measurement (advanced) */}
+        {measurement && <MeasurementDetail m={measurement} />}
+      </main>
+    </div>
+  );
+}
+
+/* ─── sub-components ─────────────────────────────────────────── */
+
+function ModeBtn({ active, children, onClick }: {
+  active: boolean; children: React.ReactNode; onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '8px 18px',
+      borderRadius: 999,
+      background: active ? 'var(--text)' : 'transparent',
+      color: active ? '#fff' : 'var(--text-2)',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '0.82rem',
+      fontWeight: 600,
+      transition: 'all 0.15s cubic-bezier(0.16,1,0.3,1)',
+    }}>{children}</button>
+  );
+}
+
+function MockupTab({ b64, loading, measurement, width, mode }: {
+  b64: string | null; loading: boolean; measurement: MeasurementResult | null;
+  width: string; mode: Mode;
+}) {
+  if (mode === 'bw-only') {
+    return (
+      <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-3)', fontSize: '0.85rem', background: 'var(--bg)' }}>
+        Mockup not generated in sketch-only mode.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {loading ? (
+        <TubeSkeleton variant="mockup" caption="Rendering the neon mockup…" />
+      ) : b64 ? (
         <div style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(255,255,255,0.92)',
+          background: '#020209', minHeight: 280,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--pink)', fontSize: '0.82rem', fontWeight: 600,
-        }} className="status-pulse">
-          Generating…
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'radial-gradient(ellipse at center, rgba(232,23,93,0.10) 0%, transparent 60%)',
+            pointerEvents: 'none',
+          }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`data:image/png;base64,${b64}`} alt="mockup" style={{
+            maxWidth: '100%', maxHeight: 380, position: 'relative', zIndex: 1,
+          }} />
+        </div>
+      ) : (
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-3)', fontSize: '0.85rem', background: 'var(--bg)' }}>
+          Upload a design and click <strong style={{ color: 'var(--text-2)' }}>Generate</strong> to render the mockup.
         </div>
       )}
-    </div>
+
+      {b64 && (
+        <a href={`data:image/png;base64,${b64}`} download="neon_mockup.png" style={dlBtnRow}>
+          ↓ Download mockup
+        </a>
+      )}
+
+      <div className="output-details">
+        <Detail label="Tube length" value={measurement ? `${measurement.measured_m.toFixed(2)} m` : '—'} />
+        <Detail label="Tolerance"   value={measurement ? `±${(100 - measurement.confidence * 100).toFixed(1)}%` : '—'} />
+        <Detail label="Quote" variant="amber"
+          value={measurement ? `$${quoteTotal(measurement).toFixed(2)}` : '—'} />
+        <Detail label="Tier"
+          value={measurement ? (TIER_LABELS[measurement.tier] ?? measurement.tier) : '—'}
+          variant={measurement?.tier === 'GLASS_CUT' ? 'green' : undefined} />
+        <Detail label="Confidence"
+          value={measurement ? `${(measurement.confidence * 100).toFixed(0)}%` : '—'}
+          variant={measurement && measurement.confidence > 0.85 ? 'green' : undefined} />
+        <Detail label="Sign width" value={`${width} in`} />
+      </div>
+    </>
   );
 }
 
-const dlStyle: React.CSSProperties = {
-  fontSize: '0.7rem', color: 'var(--text-dim)',
-  background: 'var(--bg-1)', border: '1px solid var(--border)',
-  padding: '4px 9px', borderRadius: 4, textDecoration: 'none',
-  display: 'inline-block', marginTop: '0.45rem', fontWeight: 500,
-};
-
-function modeBtn(active: boolean): React.CSSProperties {
-  return {
-    padding: '0.55rem 1.25rem',
-    borderRadius: 999,
-    background: active ? 'var(--text)' : 'transparent',
-    color: active ? '#fff' : 'var(--text-dim)',
-    border: 'none',
-    cursor: 'pointer',
-    fontSize: '0.82rem',
-    fontWeight: 600,
-    transition: 'all 0.15s',
-  };
-}
-
-function Results({ m }: { m: MeasurementResult }) {
-  const tier = m.tier || 'UNKNOWN';
-  const production = m.estimated_price ?? Math.max(25, Math.round(m.measured_m * 10));
-  const total      = m.total_price ?? (production + (m.shipping_cost ?? 0));
-
-  return (
-    <div className="card" style={{ padding: '1.75rem', marginTop: '1.75rem' }}>
-      <div style={{
-        fontFamily: 'Space Mono, monospace', fontSize: '0.7rem',
-        color: 'var(--pink)', letterSpacing: '0.18em', textTransform: 'uppercase',
-        marginBottom: '0.4rem',
-      }}>
-        Measurement results
-      </div>
-      <h3 style={{
-        fontFamily: 'Bebas Neue, sans-serif', fontSize: '1.7rem',
-        letterSpacing: '0.04em', marginBottom: '1.25rem',
-      }}>
-        Cut-ready geometry
-      </h3>
-
-      {/* Headline figures */}
-      <div style={{
-        padding: '1.25rem 1.5rem', marginBottom: '1.25rem',
-        background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)',
-        border: '1px solid #a7f3d0', borderRadius: 10,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem',
-        flexWrap: 'wrap',
-      }}>
-        <div>
-          <div style={resultsLabel}>Tube length</div>
-          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '1.7rem', fontWeight: 700 }}>
-            {m.measured_m?.toFixed(2)}<span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginLeft: 4, fontWeight: 400 }}>m</span>
-          </div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={resultsLabel}>Breakeven price</div>
-          <div style={{ fontFamily: 'Space Mono, monospace', fontSize: '2.1rem', fontWeight: 700, color: 'var(--green)' }}>
-            ${total.toFixed(2)}
-          </div>
-        </div>
-      </div>
-
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))',
-        gap: '0.6rem', marginBottom: '1rem',
-      }}>
-        <Metric label="Measured LOC" value={m.measured_m?.toFixed(4)} unit="m" />
-        <Metric label="Quality tier" value={tier} valueColor={TIER_COLOR[tier] ?? '#888'} />
-        <Metric label="Confidence" value={(m.confidence * 100).toFixed(1)} unit="%" />
-        <Metric label="Tube width" value={m.tube_width_mm?.toFixed(1)} unit="mm" />
-        <Metric label="Pixels / inch" value={m.px_per_inch?.toFixed(1)} />
-        <Metric label="Paths [S/A/F]" value={`${m.n_paths} [${m.n_straight_segs}/${m.n_arc_segs}/${m.n_freeform_segs}]`} />
-        <Metric label="Uncertainty" value={`[${m.loc_low_m?.toFixed(2)} – ${m.loc_high_m?.toFixed(2)}] m`} />
-        <Metric label="Area-based" value={m.area_m?.toFixed(4)} unit="m" />
-        <Metric label="Bias / risk" value={`${m.bias_direction} (${m.overcount_risk?.toFixed(2)})`} />
-        <Metric label="Overcount ratio" value={m.overcount_ratio?.toFixed(3)} />
-        {m.error_pct != null && (
-          <Metric label="Error vs GT" value={(m.error_pct >= 0 ? '+' : '') + m.error_pct.toFixed(2)} unit="%" />
-        )}
-        <Metric label="Runtime" value={m.elapsed_s?.toFixed(1)} unit="s" />
-      </div>
-
-      <Label>Reasoning log</Label>
-      <pre style={{
-        background: 'var(--dark)', border: '1px solid var(--border)', borderRadius: 6,
-        padding: '0.85rem', fontSize: '0.75rem', lineHeight: 1.7,
-        whiteSpace: 'pre-wrap', maxHeight: 240, overflowY: 'auto', color: '#c8c8d8',
-        fontFamily: 'Space Mono, monospace',
-      }}>
-        {(m.reasoning || []).join('\n')}
-      </pre>
-
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1.25rem' }}>
-        {m.overlay_b64 && (
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <Label>Ridge & path overlay</Label>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`data:image/png;base64,${m.overlay_b64}`} alt="overlay"
-                 style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 6, border: '1px solid var(--border)' }} />
-          </div>
-        )}
-        {m.ridge_b64 && (
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <Label>Frangi ridge map</Label>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`data:image/png;base64,${m.ridge_b64}`} alt="ridge"
-                 style={{ maxWidth: '100%', maxHeight: 320, borderRadius: 6, border: '1px solid var(--border)' }} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-const resultsLabel: React.CSSProperties = {
-  fontSize: '0.65rem', color: 'var(--text-muted)',
-  letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.3rem',
-};
-
-function Metric({ label, value, unit, valueColor }: {
-  label: string; value: string | number | undefined; unit?: string; valueColor?: string;
+function SketchTab({ b64, loading, measurement }: {
+  b64: string | null; loading: boolean; measurement: MeasurementResult | null;
 }) {
   return (
-    <div style={{
-      background: 'var(--bg-1)', border: '1px solid var(--border)',
-      borderRadius: 6, padding: '0.75rem 0.9rem',
-    }}>
+    <>
+      {loading ? (
+        <TubeSkeleton variant="sketch" caption="Tracing every tube path…" />
+      ) : b64 ? (
+        <div style={{
+          background: '#050505', minHeight: 280,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20, borderBottom: '1px solid var(--border)',
+        }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`data:image/png;base64,${b64}`} alt="sketch" style={{
+            maxWidth: '100%', maxHeight: 380, opacity: 0.9, filter: 'brightness(1.1)',
+          }} />
+        </div>
+      ) : (
+        <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-3)', fontSize: '0.85rem', background: 'var(--bg)' }}>
+          Click <strong style={{ color: 'var(--text-2)' }}>Generate</strong> to extract the tube sketch.
+        </div>
+      )}
+
+      {b64 && (
+        <a href={`data:image/png;base64,${b64}`} download="cut_sheet.png" style={dlBtnRow}>
+          ↓ Download sketch
+        </a>
+      )}
+
+      <div className="output-details">
+        <Detail label="Tube paths"    value={measurement?.n_paths?.toString() ?? '—'} />
+        <Detail label="Straight runs" value={measurement?.n_straight_segs?.toString() ?? '—'} />
+        <Detail label="Curves"        value={measurement?.n_arc_segs?.toString() ?? '—'} />
+        <Detail label="Custom shapes" value={measurement?.n_freeform_segs?.toString() ?? '—'} />
+        <Detail label="Tube width"
+          value={measurement ? `${measurement.tube_width_mm?.toFixed(1) ?? '—'} mm` : '—'} />
+        <Detail label="Status"
+          value={measurement ? (measurement.tier === 'GLASS_CUT' ? 'Cut-ready' : 'Review') : '—'}
+          variant={measurement?.tier === 'GLASS_CUT' ? 'green' : undefined} />
+      </div>
+    </>
+  );
+}
+
+function QuoteTab({ measurement, loading, uvNeon }: {
+  measurement: MeasurementResult | null; loading: boolean; uvNeon: boolean;
+}) {
+  if (loading) {
+    return (
+      <div style={{ padding: 80, textAlign: 'center', background: 'var(--bg)' }}>
+        <span className="status-pulse" style={{
+          color: 'var(--amber)', fontWeight: 600,
+          letterSpacing: '0.1em', fontFamily: 'var(--font-mono)',
+          fontSize: '0.78rem',
+        }}>
+          PRICING IT OUT…
+        </span>
+      </div>
+    );
+  }
+  if (!measurement) {
+    return (
+      <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-3)', fontSize: '0.85rem', background: 'var(--bg)' }}>
+        Click <strong style={{ color: 'var(--text-2)' }}>Generate</strong> to see the cost breakdown.
+      </div>
+    );
+  }
+
+  const len           = measurement.measured_m;
+  const rawMaterial   = len * COST_PER_METRE;
+  const markupAmount  = rawMaterial * MARKUP_RATE;
+  const subtotal      = rawMaterial + markupAmount;
+  const outdoor       = measurement.shipping_cost ?? 0;
+  const uvSurcharge   = uvNeon ? Math.max(15, len * 5) : 0;
+  const total         = subtotal + outdoor + uvSurcharge;
+
+  return (
+    <div className="quote-display">
+      <div className="quote-row"><span className="q-label">Tube length</span><span className="q-value">{len.toFixed(2)} m</span></div>
+      <div className="quote-row"><span className="q-label">Cost per metre</span><span className="q-value">${COST_PER_METRE.toFixed(2)}</span></div>
+      <div className="quote-row"><span className="q-label">Raw material cost</span><span className="q-value">${rawMaterial.toFixed(2)}</span></div>
+      <div className="quote-row"><span className="q-label">Markup applied</span><span className="q-value">{(MARKUP_RATE * 100).toFixed(0)}%</span></div>
+      {outdoor > 0     && <div className="quote-row"><span className="q-label">Outdoor surcharge</span><span className="q-value">+${outdoor.toFixed(2)}</span></div>}
+      {uvSurcharge > 0 && <div className="quote-row"><span className="q-label">UV print surcharge</span><span className="q-value">+${uvSurcharge.toFixed(2)}</span></div>}
+      <div className="quote-row total"><span className="q-label">Total customer quote</span><span className="q-value">${total.toFixed(2)}</span></div>
+
       <div style={{
-        fontSize: '0.6rem', color: 'var(--text-muted)',
-        textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.3rem',
-      }}>{label}</div>
-      <div style={{
-        fontSize: '1.2rem', fontWeight: 700, color: valueColor ?? 'var(--text)',
-        fontFamily: 'Space Mono, monospace', lineHeight: 1.05,
+        marginTop: 18, padding: '12px 14px',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 8,
+        fontSize: '0.72rem',
+        color: 'var(--text-3)',
+        lineHeight: 1.55,
       }}>
-        {value ?? '—'}
-        {unit && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 4, fontWeight: 400 }}>{unit}</span>}
+        <strong style={{ color: 'var(--text-2)' }}>How we price:</strong>{' '}
+        <span style={{
+          fontFamily: 'var(--font-mono)',
+          background: 'var(--surface-2)', padding: '2px 6px',
+          borderRadius: 4, fontSize: '0.7rem',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          (length × ${COST_PER_METRE}/m) + markup + outdoor + UV
+        </span>
       </div>
     </div>
   );
 }
 
-function b64ToBlob(b64: string, mime: string): Blob {
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  return new Blob([arr], { type: mime });
+function quoteTotal(m: MeasurementResult): number {
+  const raw = m.measured_m * COST_PER_METRE;
+  const sub = raw * (1 + MARKUP_RATE);
+  const outdoor = m.shipping_cost ?? 0;
+  return sub + outdoor;
+}
+
+function Detail({ label, value, variant }: {
+  label: string; value: string; variant?: 'amber' | 'green';
+}) {
+  return (
+    <div className={`detail-card ${variant ?? ''}`}>
+      <div className="d-label">{label}</div>
+      <div className="d-value">{value}</div>
+    </div>
+  );
+}
+
+const dlBtnRow: React.CSSProperties = {
+  display: 'block',
+  margin: 0,
+  padding: '10px 14px',
+  borderTop: '1px solid var(--border)',
+  borderBottom: '1px solid var(--border)',
+  background: 'var(--surface)',
+  textAlign: 'right',
+  fontSize: '0.74rem',
+  fontWeight: 500,
+  color: 'var(--text-2)',
+  textDecoration: 'none',
+};
+
+function MeasurementDetail({ m }: { m: MeasurementResult }) {
+  const tier = m.tier || 'UNKNOWN';
+  const tierLabel = TIER_LABELS[tier] ?? tier;
+
+  return (
+    <section style={{ marginTop: 36 }}>
+      <div className="panel-label">4. Measurement details</div>
+
+      <div className="card" style={{ padding: 22 }}>
+        <div className="output-details" style={{ padding: 0, marginBottom: 18 }}>
+          <Detail label="Tube length"     value={`${m.measured_m?.toFixed(4)} m`} />
+          <Detail label="Sign quality"    value={tierLabel}
+            variant={tier === 'GLASS_CUT' ? 'green' : undefined} />
+          <Detail label="Confidence"      value={`${(m.confidence * 100).toFixed(1)}%`} />
+          <Detail label="Tube width"      value={`${m.tube_width_mm?.toFixed(1)} mm`} />
+          <Detail label="Resolution"      value={m.px_per_inch ? `${m.px_per_inch.toFixed(0)} dpi` : '—'} />
+          <Detail label="Path range"
+            value={`[${m.loc_low_m?.toFixed(2)}–${m.loc_high_m?.toFixed(2)}] m`} />
+          <Detail label="Total paths"     value={m.n_paths?.toString() ?? '—'} />
+          <Detail label="Runtime"         value={`${m.elapsed_s?.toFixed(1)} s`} />
+          {m.error_pct != null && (
+            <Detail label="vs known length"
+              value={(m.error_pct >= 0 ? '+' : '') + m.error_pct.toFixed(2) + '%'} />
+          )}
+        </div>
+
+        {m.reasoning && m.reasoning.length > 0 && (
+          <details>
+            <summary style={{
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-3)',
+              cursor: 'pointer',
+              marginBottom: 8,
+              userSelect: 'none',
+            }}>
+              Pipeline trace ({m.reasoning.length} lines)
+            </summary>
+            <pre style={{
+              background: '#0F1117',
+              color: 'rgba(255,255,255,0.7)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: 14,
+              fontSize: '0.74rem',
+              lineHeight: 1.7,
+              whiteSpace: 'pre-wrap',
+              maxHeight: 280, overflowY: 'auto',
+              fontFamily: 'var(--font-mono)',
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {m.reasoning.join('\n')}
+            </pre>
+          </details>
+        )}
+
+        {(m.overlay_b64 || m.ridge_b64) && (
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 18 }}>
+            {m.overlay_b64 && (
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div className="panel-label">Trace overlay</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`data:image/png;base64,${m.overlay_b64}`} alt="overlay" style={{
+                  maxWidth: '100%', maxHeight: 320, borderRadius: 8,
+                  border: '1px solid var(--border)',
+                }} />
+              </div>
+            )}
+            {m.ridge_b64 && (
+              <div style={{ flex: 1, minWidth: 240 }}>
+                <div className="panel-label">Detail map</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`data:image/png;base64,${m.ridge_b64}`} alt="detail" style={{
+                  maxWidth: '100%', maxHeight: 320, borderRadius: 8,
+                  border: '1px solid var(--border)',
+                }} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
