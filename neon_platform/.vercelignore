@@ -5,3 +5,5 @@ __pycache__
 *.jpg
 datasets/
 node_modules
+.claude
+frontend
