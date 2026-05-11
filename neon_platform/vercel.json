@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "neon_platform/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "neon_platform/wsgi.py"
+    }
+  ]
+}
