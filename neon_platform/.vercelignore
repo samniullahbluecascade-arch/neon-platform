@@ -6,4 +6,3 @@ __pycache__
 datasets/
 node_modules
 .claude
-frontend
