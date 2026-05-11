@@ -1,0 +1,7 @@
+.venv
+.git
+__pycache__
+*.png
+*.jpg
+datasets/
+node_modules
