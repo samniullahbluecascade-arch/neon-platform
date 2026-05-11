@@ -9,7 +9,6 @@ build/
 *.egg
 
 # Environment
-.env
 .env.local
 .env.production
 venv/
