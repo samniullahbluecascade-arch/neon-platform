@@ -57,6 +57,6 @@ The most important and ultimate Physics-Business model alignment(never to be neg
 6. Complex colorful faces and objects are most probably UV priting  
 7. UV priting is not to be added to the neon sketch at all.
 
-Additional Instructions: [ ]
+Additional Instructions: [Search across the web for better understanding of what an LED neon looks like and how should the output be like. Using that understanding, mask the pixels for NEON tube tracing and everything else is UV printing. Always do a final check that the resultant image must not have different design in accordance with the input image. Repeat otherwise.]
 UV_PRINTING INSTRUCTIONS: [ ]
 If additional instructions and UV_PRINTING INSTRUCTIONS given, never violate it and give absolute prime importance to that also to the absolute uniquesness of each element and neon tube even if it goes counter to any of your previsous instructions.
