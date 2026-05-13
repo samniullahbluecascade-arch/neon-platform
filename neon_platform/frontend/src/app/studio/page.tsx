@@ -591,16 +591,6 @@ function MockupTab({ b64, loading, measurement, width, mode }: {
 
       <div className="output-details">
         <Detail label="Tube length" value={measurement ? `${measurement.measured_m.toFixed(2)} m` : '—'} />
-        <Detail label="Tolerance"   value={measurement ? `±${(100 - measurement.confidence * 100).toFixed(1)}%` : '—'} />
-        <Detail label="Quote" variant="amber"
-          value={measurement ? `$${quoteTotal(measurement).toFixed(2)}` : '—'} />
-        <Detail label="Tier"
-          value={measurement ? (TIER_LABELS[measurement.tier] ?? measurement.tier) : '—'}
-          variant={measurement?.tier === 'GLASS_CUT' ? 'green' : undefined} />
-        <Detail label="Confidence"
-          value={measurement ? `${(measurement.confidence * 100).toFixed(0)}%` : '—'}
-          variant={measurement && measurement.confidence > 0.85 ? 'green' : undefined} />
-        <Detail label="Sign width" value={`${width} in`} />
       </div>
     </>
   );
