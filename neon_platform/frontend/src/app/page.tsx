@@ -530,7 +530,7 @@ export default function LandingPage() {
                             placeholder="e.g. Acrylic backboard, front panel graphic, logo insert…"
                             style={{
                               height: 60,
-                              background: 'rgba(255,180,0,0.04)',
+                              background: 'rgba(126, 218, 243, 0.04)',
                               border: '1px solid rgba(255,180,0,0.25)',
                               borderRadius: 8,
                               padding: '10px 12px',
