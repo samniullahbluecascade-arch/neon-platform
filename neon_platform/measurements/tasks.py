@@ -55,7 +55,7 @@ def run_measurement(self, job_id: str) -> dict:
             sys.path.insert(0, settings.V8_ENGINE_PATH)
 
         from v8_pipeline import V8Pipeline
-        pipeline = V8Pipeline(render_vis=True)
+        pipeline = V8Pipeline(render_vis=False)
 
         # ── Read image bytes ──────────────────────────────────────────────────
         job.image.open("rb")

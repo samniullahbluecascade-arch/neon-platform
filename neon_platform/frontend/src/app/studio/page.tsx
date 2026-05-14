@@ -5,14 +5,11 @@ import { useAuth } from '@/context/AuthContext';
 import { studio, MeasurementResult } from '@/lib/api';
 import NavBar from '@/components/NavBar';
 import PipelineStrip, { Phase } from '@/components/PipelineStrip';
-import TubeSkeleton from '@/components/TubeSkeleton';
-import StreamingLog from '@/components/StreamingLog';
 
 type Tab  = 'mockup' | 'quote';
 type Mode = 'full' | 'bw-only';
 type SignType = 'standard' | 'outdoor' | 'rgb';
 
-const BASE_COST_PER_METRE = 10;
 const MARKUP_RATE    = 0.40;
 
 const SIGN_TYPE_MULTIPLIERS: Record<SignType, number> = {
@@ -241,46 +238,68 @@ export default function StudioPage() {
 
       <main className="wrapper" style={{ padding: '40px 32px 80px' }}>
         {/* Header */}
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 20, maxWidth: 920, marginLeft: 'auto', marginRight: 'auto' }}>
           <div className="section-tag">The studio</div>
           <h1 className="section-title">Upload. Configure. Generate.</h1>
-          <p className="section-sub">
+          <p className="section-sub" style={{ marginBottom: 0 }}>
             {mode === 'full'
-              ? 'Upload your design, set your preferences, and get an instant mockup with pricing.'
-              : 'Upload your mockup image and get an instant quote.'}
+              ? 'One flow: colored mockup, black-and-white cut sheet, tube length, and quote — in order.'
+              : 'Upload a finished colored mockup: we produce the cut sheet, measure tube length, and show your quote.'}
           </p>
         </div>
 
-        {/* Mode toggle */}
-        <div style={{
-          display: 'inline-flex',
+        {/* Single condensed workspace */}
+        <div className="lux-glass-panel" style={{
+          maxWidth: 920,
+          margin: '0 auto',
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          borderRadius: 999,
-          padding: 4,
-          marginBottom: 28,
+          borderRadius: 12,
+          overflow: 'hidden',
         }}>
-          <ModeBtn active={mode === 'full'}    onClick={() => { setMode('full');    reset(); }}>Full pipeline</ModeBtn>
-          <ModeBtn active={mode === 'bw-only'} onClick={() => { setMode('bw-only'); reset(); }}>Sketch & quote only</ModeBtn>
-        </div>
+          <div style={{ padding: '20px 22px 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{
+              display: 'inline-flex',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 999,
+              padding: 4,
+            }}>
+              <ModeBtn active={mode === 'full'}    onClick={() => { setMode('full');    reset(); }}>Full pipeline</ModeBtn>
+              <ModeBtn active={mode === 'bw-only'} onClick={() => { setMode('bw-only'); reset(); }}>Sketch &amp; quote only</ModeBtn>
+            </div>
+            <div style={{
+              marginTop: 14,
+              padding: '12px 14px',
+              background: 'var(--bg)',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              fontSize: '0.8rem',
+              color: 'var(--text-2)',
+              lineHeight: 1.55,
+            }}>
+              <strong style={{ color: 'var(--text)' }}>What happens when you click Generate</strong>
+              <span style={{ color: 'var(--text-3)', margin: '0 0.35rem' }}>·</span>
+              {mode === 'full' ? (
+                <>Step 1 builds the neon mockup from your logo. Step 2 traces tubes and measures total length. Step 3 applies your sign-type rate, markup, shipping, and any UV add-on.</>
+              ) : (
+                <>Step 1 converts your mockup to a B&amp;W cut sheet. Step 2 measures tube length from that sheet. Step 3 builds the quote the same way as the full pipeline.</>
+              )}
+            </div>
+          </div>
 
-        {/* Main condensed layout */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 24,
-          alignItems: 'start',
-        }}>
-          {/* LEFT — Configuration Box */}
-          <div style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: 24,
-          }}>
+          <div style={{ padding: 22 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+              gap: 22,
+              alignItems: 'start',
+            }}>
+              {/* LEFT — upload, options, run */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {/* Upload Section */}
-            <div style={{ marginBottom: 20 }}>
-              <div className="panel-label" style={{ marginBottom: 12 }}>1. Upload {mode === 'full' ? 'Design' : 'Mockup'}</div>
+            <div style={{ marginBottom: 18 }}>
+              <div className="panel-label" style={{ marginBottom: 10 }}>1. Upload {mode === 'full' ? 'Design' : 'Mockup'}</div>
               <label style={{
                 display: 'block',
                 position: 'relative',
@@ -320,8 +339,8 @@ export default function StudioPage() {
             </div>
 
             {/* Configuration Section */}
-            <div style={{ marginBottom: 20 }}>
-              <div className="panel-label" style={{ marginBottom: 12 }}>2. Configure Your Sign</div>
+            <div style={{ marginBottom: 16 }}>
+              <div className="panel-label" style={{ marginBottom: 10 }}>2. Width, sign type and color</div>
               
               <div style={{ display: 'grid', gap: 12 }}>
                 {/* Width & Sign Type Row */}
@@ -354,7 +373,7 @@ export default function StudioPage() {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Sign Type
+                      Sign type (quote rate)
                     </label>
                     <select
                       value={signType}
@@ -370,9 +389,9 @@ export default function StudioPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="standard">Standard Indoor ($10/m)</option>
-                      <option value="outdoor">Outdoor Sign ($20/m)</option>
-                      <option value="rgb">RGB Sign ($15/m)</option>
+                      <option value="standard">Standard indoor — ×$10 per metre of neon</option>
+                      <option value="outdoor">Outdoor sign — ×$20 per metre of neon</option>
+                      <option value="rgb">RGB sign — ×$15 per metre of neon</option>
                     </select>
                   </div>
                 </div>
@@ -545,8 +564,9 @@ export default function StudioPage() {
 
                 {/* Additional Instructions */}
                 <div>
+                  <div className="panel-label" style={{ marginBottom: 10, marginTop: 4 }}>3. Extras (optional)</div>
                   <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Additional Instructions (Optional)
+                    Additional Instructions
                   </label>
                   <textarea
                     value={extra}
@@ -611,20 +631,20 @@ export default function StudioPage() {
                 <span>!</span><span>{error}</span>
               </div>
             )}
-          </div>
+              </div>
 
-          {/* RIGHT — Results Box */}
+          {/* RIGHT — Results */}
           <div style={{
-            background: 'var(--surface)',
+            background: 'var(--bg)',
             border: '1px solid var(--border)',
-            borderRadius: 12,
-            padding: 24,
+            borderRadius: 8,
+            padding: 18,
           }}>
-            <div className="panel-label" style={{ marginBottom: 12 }}>3. Results</div>
+            <div className="panel-label" style={{ marginBottom: 12 }}>Results</div>
 
             {phase !== 'idle' && (
-              <div style={{ marginBottom: 16 }}>
-                <PipelineStrip phase={phase} timings={phaseTimings.current} />
+              <div style={{ marginBottom: 14, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                <PipelineStrip phase={phase} timings={phaseTimings.current} pipelineMode={mode === 'bw-only' ? 'bw' : 'full'} />
               </div>
             )}
 
@@ -651,7 +671,7 @@ export default function StudioPage() {
                   opacity: mode === 'bw-only' && !bwB64 ? 0.5 : 1,
                 }}
               >
-                {mode === 'full' ? '✦ Mockup' : '✦ Sketch'}
+                {mode === 'full' ? 'Neon mockup' : 'B&W cut sheet'}
               </button>
               <button
                 onClick={() => setTab('quote')}
@@ -676,7 +696,30 @@ export default function StudioPage() {
             {tab === 'mockup' && (
               <div>
                 {busy && (phase === 'drawing' || phase === 'tracing') ? (
-                  <TubeSkeleton variant="mockup" caption={mode === 'full' ? "Rendering the neon mockup…" : "Processing your mockup…"} />
+                  <div style={{
+                    padding: 48,
+                    textAlign: 'center',
+                    background: 'var(--surface)',
+                    borderRadius: 8,
+                    border: '1px dashed var(--border)',
+                  }}>
+                    <div className="studio-spinner" style={{
+                      width: 36,
+                      height: 36,
+                      margin: '0 auto 14px',
+                      borderRadius: '50%',
+                      border: '3px solid var(--border)',
+                      borderTopColor: 'var(--pink)',
+                    }} />
+                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>
+                      {phase === 'drawing'
+                        ? (mode === 'full' ? 'Step 1 of 3 — building your mockup…' : 'Step 1 of 3 — building your cut sheet…')
+                        : 'Step 2 of 3 — measuring tube length…'}
+                    </div>
+                    <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: 'var(--text-3)' }}>
+                      This usually takes a few seconds. Stay on this page.
+                    </p>
+                  </div>
                 ) : (mode === 'full' ? mockupB64 : bwB64) ? (
                   <div style={{
                     background: '#020209',
@@ -730,7 +773,7 @@ export default function StudioPage() {
                       textDecoration: 'none',
                     }}
                   >
-                    ↓ Download {mode === 'full' ? 'Mockup' : 'Sketch'}
+                    ↓ Download {mode === 'full' ? 'mockup' : 'cut sheet'}
                   </a>
                 )}
 
@@ -743,6 +786,8 @@ export default function StudioPage() {
                   }}>
                     <Detail label="Tube length" value={`${measurement.measured_m.toFixed(2)} m`} />
                     <Detail label="Sign quality" value={TIER_LABELS[measurement.tier] ?? measurement.tier} variant={measurement.tier === 'GLASS_CUT' ? 'green' : undefined} />
+                    <Detail label="Confidence" value={`${(measurement.confidence * 100).toFixed(0)}%`} />
+                    <Detail label="Processing time" value={`${measurement.elapsed_s?.toFixed(1) ?? '—'} s`} />
                   </div>
                 )}
               </div>
@@ -758,17 +803,10 @@ export default function StudioPage() {
               />
             )}
 
-            <StreamingLog
-              active={busy}
-              done={phase === 'done'}
-              mode={mode === 'bw-only' ? 'bw' : 'full'}
-              error={phase === 'error' ? error : null}
-            />
+          </div>
+            </div>
           </div>
         </div>
-
-        {/* Simple Measurement Summary (without reasoning and technical images) */}
-        {measurement && <SimpleMeasurementSummary m={measurement} />}
       </main>
     </div>
   );
@@ -861,8 +899,8 @@ function QuoteTab({ measurement, loading, uvNeon, signType }: {
           <span style={{ color: 'var(--text)', fontWeight: 600 }}>{len.toFixed(2)} m</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Cost per metre ({SIGN_TYPE_LABELS[signType]})</span>
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>${costPerMetre.toFixed(2)}</span>
+          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Neon material rate ({SIGN_TYPE_LABELS[signType]})</span>
+          <span style={{ color: 'var(--text)', fontWeight: 600 }}>${costPerMetre.toFixed(2)}/m</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
           <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Raw material cost</span>
@@ -872,12 +910,10 @@ function QuoteTab({ measurement, loading, uvNeon, signType }: {
           <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Markup ({(MARKUP_RATE * 100).toFixed(0)}%)</span>
           <span style={{ color: 'var(--text)', fontWeight: 600 }}>${markupAmount.toFixed(2)}</span>
         </div>
-        {shipping > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Shipping Cost</span>
-            <span style={{ color: 'var(--text)', fontWeight: 600 }}>+${shipping.toFixed(2)}</span>
-          </div>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Shipping Cost</span>
+          <span style={{ color: 'var(--text)', fontWeight: 600 }}>{shipping > 0 ? `+$${shipping.toFixed(2)}` : '$0.00'}</span>
+        </div>
         {uvSurcharge > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
             <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>UV print surcharge</span>
@@ -905,39 +941,5 @@ function QuoteTab({ measurement, loading, uvNeon, signType }: {
         {uvSurcharge > 0 ? ' + UV surcharge' : ''}
       </div>
     </div>
-  );
-}
-
-function SimpleMeasurementSummary({ m }: { m: MeasurementResult }) {
-  const tier = m.tier || 'UNKNOWN';
-  const tierLabel = TIER_LABELS[tier] ?? tier;
-
-  return (
-    <section style={{ marginTop: 24 }}>
-      <div className="panel-label" style={{ marginBottom: 12 }}>Measurement Summary</div>
-
-      <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 12,
-        padding: 20,
-      }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          gap: 12,
-        }}>
-          <Detail label="Tube length" value={`${m.measured_m?.toFixed(2)} m`} />
-          <Detail label="Sign quality" value={tierLabel} variant={tier === 'GLASS_CUT' ? 'green' : undefined} />
-          <Detail label="Confidence" value={`${(m.confidence * 100).toFixed(1)}%`} />
-          <Detail label="Tube width" value={`${m.tube_width_mm?.toFixed(1)} mm`} />
-          <Detail label="Total paths" value={m.n_paths?.toString() ?? '—'} />
-          <Detail label="Processing time" value={`${m.elapsed_s?.toFixed(1)} s`} />
-          {m.error_pct != null && (
-            <Detail label="Accuracy" value={(m.error_pct >= 0 ? '+' : '') + m.error_pct.toFixed(2) + '%'} />
-          )}
-        </div>
-      </div>
-    </section>
   );
 }

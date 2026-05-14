@@ -28,7 +28,6 @@ export default function JobDetailPage() {
 
   const [job,     setJob]     = useState<Job | null>(null);
   const [error,   setError]   = useState('');
-  const [overlay, setOverlay] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
@@ -79,8 +78,6 @@ export default function JobDetailPage() {
   const statusColor   = STATUS_COLOR[job.status] ?? 'var(--text-muted)';
   const isActive      = job.status === 'pending' || job.status === 'processing';
   const tierCfg       = job.tier_result ? TIER_CONFIG[job.tier_result as keyof typeof TIER_CONFIG] : null;
-  const overlayUrl    = job.overlay_b64 ? `data:image/png;base64,${job.overlay_b64}` : null;
-  const ridgeUrl      = job.ridge_b64 ? `data:image/png;base64,${job.ridge_b64}` : null;
 
   return (
     <div style={{ minHeight: '100vh' }}>
@@ -242,71 +239,6 @@ export default function JobDetailPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Overlay images */}
-        {(overlayUrl || ridgeUrl) && (
-          <div style={{ display: 'grid', gridTemplateColumns: ridgeUrl ? '2fr 1fr' : '1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            {overlayUrl && (
-              <div className="card" style={{ padding: '1rem', overflow: 'hidden' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                  Ridge Overlay
-                  <button
-                    onClick={() => setOverlay(!overlay)}
-                    style={{ float: 'right', background: 'none', border: 'none', color: 'var(--pink)', cursor: 'pointer', fontSize: '0.72rem' }}
-                  >
-                    {overlay ? 'collapse' : 'fullscreen'}
-                  </button>
-                </div>
-                <div style={{
-                  borderRadius: '4px',
-                  overflow: 'hidden',
-                  background: 'var(--bg-0)',
-                  height: overlay ? '80vh' : '320px',
-                  transition: 'height 0.3s ease',
-                }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={overlayUrl}
-                    alt="Ridge overlay"
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  />
-                </div>
-              </div>
-            )}
-            {ridgeUrl && (
-              <div className="card" style={{ padding: '1rem', overflow: 'hidden' }}>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Ridge Map</div>
-                <div style={{ borderRadius: '4px', overflow: 'hidden', background: 'var(--bg-0)', height: '320px' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ridgeUrl} alt="Ridge map" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Reasoning */}
-        {job.reasoning?.length > 0 && (
-          <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '1rem' }}>
-              Pipeline Reasoning
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              {job.reasoning.map((r, i) => (
-                <div key={i} style={{
-                  fontFamily: 'Space Mono, monospace',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-dim)',
-                  padding: '0.3rem 0',
-                  borderBottom: i < job.reasoning.length - 1 ? '1px solid var(--border)' : 'none',
-                }}>
-                  <span style={{ color: 'var(--pink)', marginRight: '0.6rem' }}>{String(i + 1).padStart(2, '0')}</span>
-                  {r}
-                </div>
-              ))}
             </div>
           </div>
         )}

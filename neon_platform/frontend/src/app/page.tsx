@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import NavBar from '@/components/NavBar';
 
-type Tab = 'mockup' | 'sketch' | 'quote';
+type Tab = 'mockup' | 'quote';
 
 type Sample = { word: string; color: string; glow: string };
 const SIGN_OPTIONS: Sample[] = [
@@ -81,7 +81,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="hero-sub">
-              Drop in a logo, sketch, or mockup. Neonizer&rsquo;s AI traces every tube,
+              Drop in a logo or mockup. Neonizer&rsquo;s AI traces every tube,
               counts every bend, and builds a production quote — automatically.
               No back-and-forth. No guesswork.
             </p>
@@ -268,7 +268,6 @@ export default function LandingPage() {
               <div className="frame-output">
                 <div className="output-tabs-sm">
                   <button className={`tab-sm ${smTab === 'mockup' ? 'active' : ''}`} onClick={() => setSmTab('mockup')}>Mockup</button>
-                  <button className={`tab-sm ${smTab === 'sketch' ? 'active' : ''}`} onClick={() => setSmTab('sketch')}>Sketch</button>
                   <button className={`tab-sm ${smTab === 'quote' ? 'active' : ''}`}  onClick={() => setSmTab('quote')}>Quote</button>
                 </div>
 
@@ -282,18 +281,6 @@ export default function LandingPage() {
                       <div className="meta-pill highlight"><span className="label">Quote</span><span className="value">$184.50</span></div>
                       <div className="meta-pill"><span className="label">Tolerance</span><span className="value">±4.8%</span></div>
                       <div className="meta-pill"><span className="label">Tier</span><span className="value">GLASS-CUT</span></div>
-                    </div>
-                  </>
-                )}
-
-                {smTab === 'sketch' && (
-                  <>
-                    <div className="neon-preview-box" style={{ background: '#050505' }}>
-                      <SmallSketchSvg />
-                    </div>
-                    <div className="output-meta-sm">
-                      <div className="meta-pill"><span className="label">Paths traced</span><span className="value">14</span></div>
-                      <div className="meta-pill"><span className="label">Bends</span><span className="value">22</span></div>
                     </div>
                   </>
                 )}
@@ -347,7 +334,7 @@ export default function LandingPage() {
             <div className="section-tag">From artwork to production</div>
             <h2 className="section-title">Three stages, one upload.</h2>
             <p className="section-sub">
-              Watch your customer&rsquo;s logo become a photoreal mockup, then a precise tube sketch,
+              Watch your customer&rsquo;s logo become a photoreal mockup, then a precise cut sheet,
               then a ready-to-send quote.
             </p>
           </div>
@@ -548,7 +535,7 @@ export default function LandingPage() {
                     </div>
 
                     <button className="big-gen-btn">
-                      <span>✦</span> Generate mockup, sketch &amp; quote
+                      <span>✦</span> Generate mockup &amp; quote
                     </button>
                   </div>
                 </div>
@@ -561,7 +548,6 @@ export default function LandingPage() {
               <div className="big-output-panel">
                 <div className="big-tabs">
                   <button className={`big-tab ${bigTab === 'mockup' ? 'active' : ''}`} onClick={() => setBigTab('mockup')}>✦ Neon Mockup</button>
-                  <button className={`big-tab ${bigTab === 'sketch' ? 'active' : ''}`} onClick={() => setBigTab('sketch')}>◎ Tech Sketch</button>
                   <button className={`big-tab ${bigTab === 'quote' ? 'active' : ''}`}  onClick={() => setBigTab('quote')}>$ Cost Quote</button>
                 </div>
 
@@ -604,24 +590,6 @@ export default function LandingPage() {
                   </>
                 )}
 
-                {bigTab === 'sketch' && (
-                  <>
-                    <div className="sketch-display">
-                      <div className="sketch-svg-wrap">
-                        <BigSketchSvg />
-                      </div>
-                    </div>
-                    <div className="output-details">
-                      <div className="detail-card"><div className="d-label">Tube paths</div><div className="d-value">14</div></div>
-                      <div className="detail-card"><div className="d-label">Bend count</div><div className="d-value">22</div></div>
-                      <div className="detail-card"><div className="d-label">Straight runs</div><div className="d-value">8</div></div>
-                      <div className="detail-card"><div className="d-label">Resolution</div><div className="d-value">2400 dpi</div></div>
-                      <div className="detail-card green"><div className="d-label">Status</div><div className="d-value">Cut-ready</div></div>
-                      <div className="detail-card"><div className="d-label">Format</div><div className="d-value">SVG / PDF</div></div>
-                    </div>
-                  </>
-                )}
-
                 {bigTab === 'quote' && (
                   <div className="quote-display">
                     <div className="quote-row"><span className="q-label">Tube length</span><span className="q-value">3.12 m</span></div>
@@ -629,7 +597,7 @@ export default function LandingPage() {
                     <div className="quote-row"><span className="q-label">Raw material cost</span><span className="q-value">$131.04</span></div>
                     <div className="quote-row"><span className="q-label">Labour estimate</span><span className="q-value">~2.5 hrs</span></div>
                     <div className="quote-row"><span className="q-label">Markup applied</span><span className="q-value">40%</span></div>
-                    <div className="quote-row"><span className="q-label">Outdoor surcharge</span><span className="q-value">+$18.00</span></div>
+                    <div className="quote-row"><span className="q-label">Shipping Cost</span><span className="q-value">+$18.00</span></div>
                     <div className="quote-row total"><span className="q-label">Total customer quote</span><span className="q-value">$184.50</span></div>
                   </div>
                 )}
@@ -660,7 +628,7 @@ export default function LandingPage() {
             <div className="feature-card reveal" data-delay="2">
               <div className="feature-icon cyan">◎</div>
               <h3>Tube Extraction</h3>
-              <p>Centerlines pulled straight from your mockup. Every path traced, every bend counted. Send the sketch to your bender as-is.</p>
+              <p>Centerlines pulled straight from your mockup. Every path traced, every bend counted. Send the cut sheet to your bender as-is.</p>
             </div>
             <div className="feature-card reveal" data-delay="3">
               <div className="feature-icon amber">$</div>
@@ -713,7 +681,7 @@ export default function LandingPage() {
             <div className="step-item reveal" data-delay="4">
               <div className="step-num">04</div>
               <h4>Quote</h4>
-              <p>Receive your mockup, sketch, and final quote. Send it, bend it, done.</p>
+              <p>Receive your mockup and final quote. Send it, bend it, done.</p>
             </div>
           </div>
         </div>
@@ -818,26 +786,6 @@ function QRow({ label, value, total }: { label: string; value: string; total?: b
   );
 }
 
-function SmallSketchSvg() {
-  return (
-    <svg width="130" height="80" viewBox="0 0 130 80" fill="none" style={{ opacity: 0.6 }}>
-      <rect x="8" y="20" width="4" height="40" rx="2" fill="white" />
-      <rect x="8" y="20" width="20" height="4" rx="2" fill="white" />
-      <rect x="8" y="38" width="20" height="4" rx="2" fill="white" />
-      <rect x="8" y="56" width="20" height="4" rx="2" fill="white" />
-      <rect x="36" y="20" width="4" height="40" rx="2" fill="white" />
-      <rect x="50" y="20" width="4" height="40" rx="2" fill="white" />
-      <path d="M54 20 C54 20 68 20 68 38 C68 56 54 56 54 56" stroke="white" strokeWidth="4" strokeLinecap="round" fill="none" />
-      <rect x="76" y="20" width="4" height="40" rx="2" fill="white" />
-      <rect x="76" y="20" width="18" height="4" rx="2" fill="white" />
-      <rect x="90" y="20" width="4" height="40" rx="2" fill="white" />
-      <rect x="102" y="20" width="4" height="40" rx="2" fill="white" />
-      <path d="M106 20 L122 56" stroke="white" strokeWidth="4" strokeLinecap="round" />
-      <path d="M106 56 L122 20" stroke="white" strokeWidth="4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function Stage3SketchSvg() {
   return (
     <svg viewBox="0 0 100 70" fill="none">
@@ -853,43 +801,6 @@ function Stage3SketchSvg() {
       <path d="M68 60 L83 10" stroke="white" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
       <line x1="2" y1="65" x2="88" y2="65" stroke="rgba(255,20,100,0.6)" strokeWidth="0.8" strokeDasharray="3,2" />
       <text x="44" y="69" fill="rgba(255,20,100,0.8)" fontSize="4" fontFamily="monospace" textAnchor="middle">3.12 m · ±5%</text>
-    </svg>
-  );
-}
-
-function BigSketchSvg() {
-  return (
-    <svg width="320" height="120" viewBox="0 0 320 120" fill="none">
-      {/* O */}
-      <rect x="10" y="15" width="6" height="75" rx="3" fill="white" />
-      <rect x="10" y="15" width="36" height="6" rx="3" fill="white" />
-      <rect x="10" y="84" width="36" height="6" rx="3" fill="white" />
-      <rect x="40" y="15" width="6" height="75" rx="3" fill="white" />
-      {/* P */}
-      <rect x="60" y="15" width="6" height="75" rx="3" fill="white" />
-      <rect x="60" y="15" width="6" height="6" rx="3" fill="white" />
-      <path d="M66 15 C66 15 96 15 96 38 C96 61 66 61 66 61" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none" />
-      {/* E */}
-      <rect x="112" y="15" width="6" height="75" rx="3" fill="white" />
-      <rect x="112" y="15" width="36" height="6" rx="3" fill="white" />
-      <rect x="112" y="51" width="28" height="6" rx="3" fill="white" />
-      <rect x="112" y="84" width="36" height="6" rx="3" fill="white" />
-      {/* N */}
-      <rect x="164" y="15" width="6" height="75" rx="3" fill="white" />
-      <path d="M170 15 L200 90" stroke="white" strokeWidth="6" strokeLinecap="round" />
-      <rect x="200" y="15" width="6" height="75" rx="3" fill="white" />
-      {/* Dimension lines */}
-      <line x1="5" y1="108" x2="210" y2="108" stroke="rgba(255,20,100,0.5)" strokeWidth="1" strokeDasharray="4,3" />
-      <line x1="5" y1="103" x2="5" y2="113" stroke="rgba(255,20,100,0.5)" strokeWidth="1" />
-      <line x1="210" y1="103" x2="210" y2="113" stroke="rgba(255,20,100,0.5)" strokeWidth="1" />
-      <text x="107" y="118" fill="rgba(255,20,100,0.7)" fontSize="8" fontFamily="monospace" textAnchor="middle">3.12 m · ±4.8% · GLASS-CUT</text>
-      {/* Bend markers */}
-      <circle cx="40" cy="15" r="3" fill="rgba(0,229,200,0.7)" />
-      <circle cx="10" cy="15" r="3" fill="rgba(0,229,200,0.7)" />
-      <circle cx="10" cy="90" r="3" fill="rgba(0,229,200,0.7)" />
-      <circle cx="46" cy="90" r="3" fill="rgba(0,229,200,0.7)" />
-      <circle cx="66" cy="15" r="3" fill="rgba(0,229,200,0.7)" />
-      <circle cx="66" cy="61" r="3" fill="rgba(0,229,200,0.7)" />
     </svg>
   );
 }

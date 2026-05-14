@@ -28,18 +28,41 @@ except ImportError:
 # ── Prompt file paths ─────────────────────────────────────────────────────────
 _DIR = Path(__file__).parent
 
-try:
-    _LOGO_TO_MOCKUP_PROMPT: str = (
-        (_DIR / "logo_to_mockup_prompt.txt").read_text(encoding="utf-8")
-    )
-except Exception:
-    _LOGO_TO_MOCKUP_PROMPT = ""
-try:
-    _MOCKUP_TO_BW_PROMPT: str = (
-        (_DIR / "Mockup_to_B&W_prompt.txt").read_text(encoding="utf-8")
-    )
-except Exception:
-    _MOCKUP_TO_BW_PROMPT = ""
+def _load_prompt(filename: str) -> str:
+    """Load a prompt file, returning empty string on failure."""
+    try:
+        return (_DIR / filename).read_text(encoding="utf-8")
+    except Exception:
+        return ""
+
+# Standard/Indoor prompt (default)
+_LOGO_TO_MOCKUP_PROMPT: str = _load_prompt("logo_to_mockup_prompt.txt")
+
+# Outdoor-specific prompt
+_LOGO_TO_MOCKUP_PROMPT_OUTDOOR: str = _load_prompt("logo_to_mockup_prompt_outdoor.txt")
+
+# B&W extraction prompt (same for all sign types)
+_MOCKUP_TO_BW_PROMPT: str = _load_prompt("Mockup_to_B&W_prompt.txt")
+
+
+def _get_mockup_prompt(sign_type: str = "standard") -> str:
+    """
+    Select the appropriate mockup generation prompt based on sign type.
+    
+    Args:
+        sign_type: "standard", "indoor", "rgb" (all use standard prompt), or "outdoor"
+    
+    Returns:
+        The prompt text to use for mockup generation
+    """
+    sign_type_lower = (sign_type or "standard").lower()
+    
+    # Outdoor signs use the specialized outdoor prompt
+    if sign_type_lower == "outdoor" and _LOGO_TO_MOCKUP_PROMPT_OUTDOOR:
+        return _LOGO_TO_MOCKUP_PROMPT_OUTDOOR
+    
+    # Standard, indoor, and RGB signs all use the default indoor prompt
+    return _LOGO_TO_MOCKUP_PROMPT
 
 # Named placeholders in prompt files — kept distinct so additional vs UV
 # instructions can be substituted independently.
@@ -253,6 +276,7 @@ def generate_mockup(
     bg_mime:    str  | None  = None,
     additional: str          = "",
     uv:         str          = "",
+    sign_type:  str          = "standard",
 ) -> bytes:
     """
     Phase 1 — Logo (+ optional background environment) → colored neon mockup.
@@ -261,6 +285,15 @@ def generate_mockup(
       Part 0 : logo / design  (Image 1 in prompt)
       Part 1 : background     (Image 2 in prompt, if supplied)
       Part 2 : prompt text
+
+    Args:
+        logo_bytes: The logo/design image bytes
+        logo_mime: MIME type of the logo image
+        bg_bytes: Optional background image bytes
+        bg_mime: MIME type of the background image
+        additional: Additional instructions for the mockup generation
+        uv: UV printing instructions
+        sign_type: "standard", "indoor", "rgb" (all use indoor prompt), or "outdoor"
 
     Returns PNG bytes.
     """
@@ -273,7 +306,9 @@ def generate_mockup(
 
     logo_png = _to_png(logo_bytes, logo_mime)
 
-    prompt_text = _fill_placeholders(_LOGO_TO_MOCKUP_PROMPT, additional, uv)
+    # Select appropriate prompt based on sign type
+    base_prompt = _get_mockup_prompt(sign_type)
+    prompt_text = _fill_placeholders(base_prompt, additional, uv)
 
     parts: list = [
         types.Part.from_bytes(data=logo_png, mime_type="image/png"),

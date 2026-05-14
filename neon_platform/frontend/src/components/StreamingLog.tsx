@@ -17,7 +17,7 @@ const SCHEDULE_FULL: { at: number; line: string }[] = [
   { at: 4500, line: 'Tube extraction · centerline pass' },
   { at: 6300, line: 'Bézier path fit · 14 paths · 22 bends' },
   { at: 6800, line: 'Length · within 5%' },
-  { at: 7400, line: 'Pricing · cost × markup + outdoor' },
+  { at: 7400, line: 'Pricing · material + markup + shipping' },
 ];
 
 const SCHEDULE_BW: { at: number; line: string }[] = [
@@ -25,7 +25,7 @@ const SCHEDULE_BW: { at: number; line: string }[] = [
   { at: 800,  line: 'Tube extraction · centerline pass' },
   { at: 2400, line: 'Bézier path fit · paths · bends' },
   { at: 2900, line: 'Length · within 5%' },
-  { at: 3500, line: 'Pricing · cost × markup + outdoor' },
+  { at: 3500, line: 'Pricing · material + markup + shipping' },
 ];
 
 export default function StreamingLog({

@@ -17,49 +17,22 @@ export default function NavBar() {
   const link = (href: string, label: string) => {
     const active = path === href;
     return (
-      <Link
-        href={href}
-        style={{
-          color: active ? 'var(--text)' : 'var(--text-2)',
-          fontWeight: 500,
-          fontSize: '0.875rem',
-          letterSpacing: '0.01em',
-          paddingBottom: 2,
-          borderBottom: active ? '2px solid var(--pink)' : '2px solid transparent',
-          transition: 'color 0.2s',
-        }}
-      >
+      <Link href={href} className={`lux-nav-link${active ? ' is-active' : ''}`}>
         {label}
       </Link>
     );
   };
 
   return (
-    <nav
-      style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        background: 'rgba(255,255,255,0.92)',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: '0 1px 0 rgba(0,0,0,0.06)',
-      }}
-    >
-      <div className="wrapper" style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 40,
-        height: 64,
-      }}>
-        <Link href="/" className="nav-logo" style={{ marginRight: 'auto' }}>
+    <nav className="lux-nav">
+      <div className="wrapper lux-nav-inner">
+        <Link href="/" className="nav-logo lux-nav-brand" style={{ marginRight: 'auto' }}>
           <span className="logo-dot" />
           Neonizer
         </Link>
 
         {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <div className="lux-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
             {link('/dashboard', 'Quick Measure')}
             {link('/studio', 'Studio')}
             {link('/pricing', 'Pricing')}
@@ -89,12 +62,12 @@ export default function NavBar() {
             </button>
           </div>
         ) : (
-          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-            <Link href="/studio" style={{ color: path === '/studio' ? 'var(--text)' : 'var(--text-2)', fontWeight: 500, fontSize: '0.875rem' }}>Studio</Link>
-            <Link href="/pricing" style={{ color: path === '/pricing' ? 'var(--text)' : 'var(--text-2)', fontWeight: 500, fontSize: '0.875rem' }}>Pricing</Link>
-            <Link href="/login" style={{ color: 'var(--text-2)', fontWeight: 500, fontSize: '0.875rem' }}>Login</Link>
+          <div className="nav-links lux-nav-links">
+            <Link href="/studio" className={`lux-nav-link${path === '/studio' ? ' is-active' : ''}`}>Studio</Link>
+            <Link href="/pricing" className={`lux-nav-link${path === '/pricing' ? ' is-active' : ''}`}>Pricing</Link>
+            <Link href="/login" className="lux-nav-link">Login</Link>
             <Link href="/register">
-              <button className="nav-cta">Start free →</button>
+              <button className="nav-cta lux-nav-cta">Start free →</button>
             </Link>
           </div>
         )}

@@ -76,10 +76,15 @@ class V8APITests(TestCase):
             format="multipart",
         )
         self.assertEqual(response.status_code, 200)
-        # Expect a dict with many result fields
         result = response.json()
-        self.assertIn("measured_m", result)
-        self.assertIn("overlay_b64", result)
+        self.assertIn("mockup_b64", result)
+        self.assertIn("bw_b64", result)
+        self.assertIn("measurement", result)
+        m = result["measurement"]
+        self.assertIn("measured_m", m)
+        self.assertEqual(m.get("overlay_b64"), "")
+        self.assertEqual(m.get("ridge_b64"), "")
+        self.assertEqual(m.get("reasoning"), [])
 
     def test_bw_only_pipeline(self):
         # Generate a mockup first
@@ -109,7 +114,10 @@ class V8APITests(TestCase):
             format="multipart",
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn("measured_m", response.json())
+        body = response.json()
+        self.assertIn("bw_b64", body)
+        self.assertIn("measurement", body)
+        self.assertIn("measured_m", body["measurement"])
 
     def test_measure(self):
         url = reverse("measure")

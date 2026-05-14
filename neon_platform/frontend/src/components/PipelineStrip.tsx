@@ -9,20 +9,30 @@ const IconCheck = ({ size = 11 }: { size?: number }) => (
 
 export type Phase = 'idle' | 'drawing' | 'tracing' | 'pricing' | 'done' | 'error';
 
-const STEPS: { key: Exclude<Phase, 'idle' | 'done' | 'error'>; label: string }[] = [
-  { key: 'drawing', label: 'Drawing the sign' },
-  { key: 'tracing', label: 'Tracing tubes' },
-  { key: 'pricing', label: 'Pricing it out' },
+const STEPS_FULL: { key: Exclude<Phase, 'idle' | 'done' | 'error'>; label: string }[] = [
+  { key: 'drawing', label: 'Step 1 · Neon mockup' },
+  { key: 'tracing', label: 'Step 2 · Tube length (LOC)' },
+  { key: 'pricing', label: 'Step 3 · Your quote' },
+];
+
+const STEPS_BW: { key: Exclude<Phase, 'idle' | 'done' | 'error'>; label: string }[] = [
+  { key: 'drawing', label: 'Step 1 · B&W cut sheet' },
+  { key: 'tracing', label: 'Step 2 · Tube length (LOC)' },
+  { key: 'pricing', label: 'Step 3 · Your quote' },
 ];
 
 export default function PipelineStrip({
   phase,
   timings,
+  pipelineMode = 'full',
 }: {
   phase: Phase;
   /** Optional ms timings to display next to completed steps */
   timings?: Partial<Record<Exclude<Phase, 'idle' | 'done' | 'error'>, number>>;
+  /** `bw` = mockup-only path (Sketch & quote only) */
+  pipelineMode?: 'full' | 'bw';
 }) {
+  const STEPS = pipelineMode === 'bw' ? STEPS_BW : STEPS_FULL;
   const order = STEPS.map(s => s.key);
   const activeIdx =
     phase === 'idle' ? -1 :

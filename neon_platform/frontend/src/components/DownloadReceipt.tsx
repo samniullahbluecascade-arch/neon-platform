@@ -172,30 +172,6 @@ export default function DownloadReceipt({ job }: Props) {
     });
     y += Math.ceil(cells.length / cols) * cellH + 6;
 
-    // ─── Reasoning ──────────────────────────────────────────────────────────
-    if (job.reasoning && job.reasoning.length) {
-      doc.setTextColor(...dark);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text('PIPELINE REASONING', M, y);
-      doc.setDrawColor(220, 220, 230);
-      doc.line(M, y + 1.5, W - M, y + 1.5);
-      y += 6;
-
-      doc.setTextColor(60, 60, 70);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      job.reasoning.forEach((r, i) => {
-        const lines = doc.splitTextToSize(`${String(i + 1).padStart(2, '0')}. ${r}`, W - 2 * M - 4);
-        if (y + lines.length * 4 > 280) {
-          doc.addPage();
-          y = M;
-        }
-        doc.text(lines, M, y);
-        y += lines.length * 4 + 1;
-      });
-    }
-
     // ─── Footer on every page ──────────────────────────────────────────────
     const totalPages = doc.getNumberOfPages();
     for (let p = 1; p <= totalPages; p++) {

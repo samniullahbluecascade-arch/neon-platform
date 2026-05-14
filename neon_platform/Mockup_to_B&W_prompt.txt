@@ -13,3 +13,7 @@ Structural Integrity: Maintain the exact scale, position, and stroke-width of th
 Edge Removal: Do not render the acrylic backing, the edges of the sign board, or any power cables.
 
 Output Specification: A pure black and white image. Only the "on" state of the neon path is white. Everything else is black. No gray tones, no textures, no dots.
+
+Additional Instructions: [Search across the web for better understanding of what an LED neon tube looks like and what should the output image be like. Mask the neon tube pixels and put them on dark black background. Always do a final check that the resultant image must strictly and only contain the thin white tracing of neon tube only of exactly same shape and position as in the real mock-up with strictly dull black background. Repeat otherwise.]
+UV_PRINTING INSTRUCTIONS: [ ]
+If additional instructions and UV_PRINTING INSTRUCTIONS given, never violate it and give absolute prime importance to that also to the absolute uniquesness of each element and neon tube.
