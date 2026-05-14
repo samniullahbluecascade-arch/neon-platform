@@ -575,8 +575,8 @@ export default function StudioPage() {
               style={{
                 width: '100%',
                 padding: '14px 20px',
-                background: busy ? 'var(--surface-2)' : 'var(--text)',
-                color: busy ? 'var(--text-3)' : '#000',
+                background: busy ? 'var(--surface-2)' : '#9beaf8',
+                color: busy ? 'var(--text-3)' : '#9beaf8',
                 border: 'none',
                 borderRadius: 8,
                 fontSize: '0.9rem',
@@ -641,8 +641,8 @@ export default function StudioPage() {
                 disabled={mode === 'bw-only' && !bwB64}
                 style={{
                   padding: '8px 16px',
-                  background: tab === 'mockup' ? 'var(--text)' : 'transparent',
-                  color: tab === 'mockup' ? '#000' : 'var(--text-2)',
+                  background: tab === 'mockup' ? '#f6a6f6' : 'transparent',
+                  color: tab === 'mockup' ? '#f5a4e7' : 'var(--text-2)',
                   border: 'none',
                   borderRadius: 6,
                   fontSize: '0.8rem',
@@ -658,8 +658,8 @@ export default function StudioPage() {
                 disabled={!measurement}
                 style={{
                   padding: '8px 16px',
-                  background: tab === 'quote' ? 'var(--text)' : 'transparent',
-                  color: tab === 'quote' ? '#000' : 'var(--text-2)',
+                  background: tab === 'quote' ? '#ff6d6d' : 'transparent',
+                  color: tab === 'quote' ? '#fd9999' : 'var(--text-2)',
                   border: 'none',
                   borderRadius: 6,
                   fontSize: '0.8rem',
