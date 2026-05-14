@@ -576,7 +576,7 @@ export default function StudioPage() {
                 width: '100%',
                 padding: '14px 20px',
                 background: busy ? 'var(--surface-2)' : '#9beaf8',
-                color: busy ? 'var(--text-3)' : '#9beaf8',
+                color: busy ? 'var(--text-3)' : '#000000',
                 border: 'none',
                 borderRadius: 8,
                 fontSize: '0.9rem',
@@ -642,7 +642,7 @@ export default function StudioPage() {
                 style={{
                   padding: '8px 16px',
                   background: tab === 'mockup' ? '#f6a6f6' : 'transparent',
-                  color: tab === 'mockup' ? '#f5a4e7' : 'var(--text-2)',
+                  color: tab === 'mockup' ? '#000000' : 'var(--text-2)',
                   border: 'none',
                   borderRadius: 6,
                   fontSize: '0.8rem',
@@ -659,7 +659,7 @@ export default function StudioPage() {
                 style={{
                   padding: '8px 16px',
                   background: tab === 'quote' ? '#ff6d6d' : 'transparent',
-                  color: tab === 'quote' ? '#fd9999' : 'var(--text-2)',
+                  color: tab === 'quote' ? '#000000' : 'var(--text-2)',
                   border: 'none',
                   borderRadius: 6,
                   fontSize: '0.8rem',
