@@ -6,14 +6,14 @@ The background is OUTDOOR — choose a location that matches the sign's psycholo
 - Hospitality/entertainment signs: urban nightlife settings, exterior bar walls, restaurant facades, entertainment venues
 - Professional/corporate signs: office building exteriors, commercial plazas, clean architectural surfaces
 - Artistic/creative signs: urban street walls, industrial exteriors, creative district facades
-The sign is mounted flat on the exterior wall, centrally positioned. Power cord and mounting hardware are weatherproofed and discreetly integrated — visible only as professional outdoor-rated brackets or standoffs that suggest durability and weather resistance. No exposed wiring.
+The sign is mounted flat on the exterior wall.
 
 SIGN CONSTRUCTION — READ THE DESIGN FIRST, THEN APPLY THESE RULES IN ORDER
 
 Step 1 — Classify every element in the uploaded design:
   A) Simple outlines, borders, geometric frames, simple text → LED neon tube only
-  B) The background is outdoor matching the sign's location and mood. Do not try to change black color to any other color.
-  D) Text or shapes where stroke weight visibly varies at joints, curves, or terminals (calligraphic, brush, display, or contrast-serif typefaces) → single-tube construction
+  B) The background is outdoor matching the sign's location and mood. 
+  D) Text or shapes where stroke weight visibly varies at joints, curves, or terminals (calligraphic, brush, display, or contrast-serif typefaces) → single-tube construction.
 
 Step 2 — Apply the correct construction method per element:
 
@@ -24,7 +24,7 @@ Step 2 — Apply the correct construction method per element:
   - Every tube glows with INTENSE, BRIGHT luminescence suitable for outdoor visibility; the glow colour exactly matches the tube colour; glow is the only light-emitting element on the sign
   - Weatherproof construction cues: sealed tube ends, protective silicone coating with slight sheen, robust mounting channels visible
 
-  UV-PRINTED ELEMENTS (type-B areas):
+  UV-PRINTED ELEMENTS (type-B areas) only when neon tube cannot be used:
   - On areas on the design with complex shapes, or dense regions or multiple colors, UV is used instead of LED neon tube.
   - Flat-ink UV print applied directly onto the WEATHER-RESISTANT acrylic surface around the neon tubes — UV print is fade-resistant for outdoor exposure
   - UV print does not glow; it is a non-luminous surface print even dull it must absolutely be quite visible (you can't make it dull black simply)

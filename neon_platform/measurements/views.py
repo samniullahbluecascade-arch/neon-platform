@@ -1,5 +1,5 @@
 from rest_framework import generics, permissions, status
-from rest_framework.decorators import permission_classes
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import ScopedRateThrottle
@@ -12,9 +12,35 @@ from .throttles import TierBasedThrottle
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import base64
-from v8_generate import generate_mockup, generate_bw
+from v8_generate import (
+    generate_mockup,
+    generate_bw,
+    generate_mockup_with_judge,
+    SafetyBlockedError,
+)
 from v8_pipeline import V8Pipeline
 from .shipping import get_shipping_cost
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Tier-based judge-retry budget (matches users.models.Tier values)
+#    free       → 0 retries (judge OFF, identical cost to old flow)
+#    starter    → 1 retry   (worst-case 2 mockups + 2 judges = 4 gemini calls)
+#    business   → 2 retries (worst-case 3 mockups + 3 judges = 6 gemini calls)
+#    enterprise → 4 retries (worst-case 5 mockups + 5 judges = 10 gemini calls)
+# ─────────────────────────────────────────────────────────────────────────────
+TIER_JUDGE_RETRY_BUDGET = {
+    "free":       0,
+    "starter":    1,
+    "business":   2,
+    "enterprise": 4,
+}
+
+
+def _retry_budget_for(user) -> int:
+    if not user or not getattr(user, "is_authenticated", False):
+        return 0
+    return TIER_JUDGE_RETRY_BUDGET.get(getattr(user, "tier", "free"), 0)
 
 
 def _count_gemini_call(request, n=1):
@@ -173,61 +199,81 @@ class JobListView(generics.ListAPIView):
 # New API endpoints required by the Next.js frontend (v8_app.js)
 # -------------------------------------------------------------------------
 
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def api_generate_mockup(request):
     """
-    POST /api/generate_mockup
-    Expects multipart/form-data with fields:
+    POST /api/generate_mockup/
+    Multipart fields:
         - logo (file, required)
         - background (file, optional)
         - additional (text, optional)
-    Returns JSON: { "image_b64": "<base64 png>" }
+        - uv (text, optional)
+        - sign_type   ∈ {"standard","indoor","outdoor","rgb"}      (optional)
+        - subtype     (outdoor: pole_sign|monument_sign|...; indoor: living_room|...)
+        - outdoor_subtype / indoor_subtype  (accepted aliases of `subtype`)
+    Returns JSON: {
+        image_b64, subtype, sign_type, attempts, judge_calls, judge_log, final_verdict
+    }
     """
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
     logo_file = request.FILES.get("logo")
     if not logo_file:
         return JsonResponse({"error": "Missing logo file"}, status=400)
 
-    bg_file = request.FILES.get("background")
+    bg_file    = request.FILES.get("background")
     additional = request.POST.get("additional", "")
     uv         = request.POST.get("uv", "")
+    sign_type  = request.POST.get("sign_type", "standard")
+    subtype    = (request.POST.get("subtype")
+                  or request.POST.get("outdoor_subtype")
+                  or request.POST.get("indoor_subtype")
+                  or None)
+    max_retries = _retry_budget_for(request.user)
 
     try:
         logo_bytes = logo_file.read()
-        bg_bytes = bg_file.read() if bg_file else None
-        bg_mime = bg_file.content_type if bg_file else None
+        bg_bytes   = bg_file.read() if bg_file else None
+        bg_mime    = bg_file.content_type if bg_file else None
 
-        mockup_bytes = generate_mockup(
-            logo_bytes,
-            logo_file.content_type,
-            bg_bytes,
-            bg_mime,
-            additional,
-            uv,
+        result = generate_mockup_with_judge(
+            logo_bytes=logo_bytes,
+            logo_mime=logo_file.content_type,
+            bg_bytes=bg_bytes,
+            bg_mime=bg_mime,
+            additional=additional,
+            uv=uv,
+            sign_type=sign_type,
+            subtype=subtype,
+            max_retries=max_retries,
         )
-        image_b64 = base64.b64encode(mockup_bytes).decode()
-        _count_gemini_call(request, n=1)
-        return JsonResponse({"image_b64": image_b64})
+        image_b64 = base64.b64encode(result["mockup_bytes"]).decode()
+        _count_gemini_call(request, n=result.get("gemini_calls", 1))
+        return JsonResponse({
+            "image_b64":     image_b64,
+            "sign_type":     sign_type,
+            "subtype":       result.get("subtype"),
+            "attempts":      result.get("attempts"),
+            "judge_calls":   result.get("judge_calls"),
+            "judge_log":     result.get("judge_log"),
+            "final_verdict": result.get("final_verdict"),
+        })
+    except SafetyBlockedError as exc:
+        return JsonResponse({"error": f"Safety filter blocked generation: {exc}"}, status=422)
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=500)
 
 
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def api_generate_bw(request):
     """
-    POST /api/generate_bw
-    Expects multipart/form-data with fields:
+    POST /api/generate_bw/
+    Multipart fields:
         - mockup (file, required)
         - additional (text, optional)
+        - uv (text, optional)
     Returns JSON: { "image_b64": "<base64 png>" }
     """
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
     mockup_file = request.FILES.get("mockup")
     if not mockup_file:
         return JsonResponse({"error": "Missing mockup file"}, status=400)
@@ -245,57 +291,77 @@ def api_generate_bw(request):
         return JsonResponse({"error": str(exc)}, status=500)
 
 
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def api_full_pipeline(request):
     """
-    POST /api/full_pipeline
-    Expects multipart/form-data with fields:
+    POST /api/full_pipeline/
+    Multipart fields:
         - logo (file, required)
         - background (file, optional)
         - width_inches (float, required)
         - height_inches (float, optional)
-        - additional (text, optional)
+        - additional (text, optional, Phase 1)
+        - additional_bw (text, optional, Phase 2)
+        - uv (text, optional)
+        - sign_type   ∈ {"standard","indoor","outdoor","rgb"}      (optional)
+        - subtype / outdoor_subtype / indoor_subtype               (optional)
         - force_format (text, optional)
         - ground_truth_m (float, optional)
-    Returns JSON with the full V8Result fields.
+    Returns JSON: {
+        mockup_b64, bw_b64, measurement,
+        sign_type, subtype, attempts, judge_calls, judge_log, final_verdict
+    }
     """
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
     logo_file = request.FILES.get("logo")
     if not logo_file:
         return JsonResponse({"error": "Missing logo file"}, status=400)
 
-    bg_file = request.FILES.get("background")
-    width_inches = request.POST.get("width_inches")
+    bg_file       = request.FILES.get("background")
+    width_inches  = request.POST.get("width_inches")
     height_inches = request.POST.get("height_inches")
-    additional    = request.POST.get("additional", "")     # Phase 1 (mockup)
-    additional_bw = request.POST.get("additional_bw", "")  # Phase 2 (BW)
+    additional    = request.POST.get("additional", "")
+    additional_bw = request.POST.get("additional_bw", "")
     uv            = request.POST.get("uv", "")
+    sign_type     = request.POST.get("sign_type", "standard")
+    subtype       = (request.POST.get("subtype")
+                     or request.POST.get("outdoor_subtype")
+                     or request.POST.get("indoor_subtype")
+                     or None)
     force_format  = request.POST.get("force_format", "")
     gt_m          = request.POST.get("ground_truth_m")
 
     try:
-        width_inches = float(width_inches)
+        width_inches  = float(width_inches)
         height_inches = float(height_inches) if height_inches else None
-        gt_m = float(gt_m) if gt_m else None
+        gt_m          = float(gt_m) if gt_m else None
     except (TypeError, ValueError):
         return JsonResponse({"error": "Invalid numeric parameters"}, status=400)
 
+    max_retries = _retry_budget_for(request.user)
+
     try:
         logo_bytes = logo_file.read()
-        bg_bytes = bg_file.read() if bg_file else None
-        bg_mime = bg_file.content_type if bg_file else None
+        bg_bytes   = bg_file.read() if bg_file else None
+        bg_mime    = bg_file.content_type if bg_file else None
 
-        # Phase 1: Logo → colored mockup
-        mockup_bytes = generate_mockup(
-            logo_bytes, logo_file.content_type, bg_bytes, bg_mime, additional, uv,
+        # Phase 1: Logo → colored mockup (with optional judge-retry loop)
+        mockup_result = generate_mockup_with_judge(
+            logo_bytes=logo_bytes,
+            logo_mime=logo_file.content_type,
+            bg_bytes=bg_bytes,
+            bg_mime=bg_mime,
+            additional=additional,
+            uv=uv,
+            sign_type=sign_type,
+            subtype=subtype,
+            max_retries=max_retries,
         )
-        # Phase 2: Mockup → B&W tube sketch. Use BW-specific instructions if
-        # provided, else fall back to Phase 1 instructions. UV propagates so
-        # the extractor leaves UV-printed regions untouched.
+        mockup_bytes = mockup_result["mockup_bytes"]
+
+        # Phase 2: Mockup → B&W tube sketch
         bw_bytes = generate_bw(mockup_bytes, "image/png", additional_bw or additional, uv)
+
         # Phase 3: B&W → LOC measurement
         pipeline = V8Pipeline(render_vis=True)
         result = pipeline.measure_from_bytes(
@@ -306,14 +372,26 @@ def api_full_pipeline(request):
             filename="studio_bw.png",
             force_format=force_format or "bw",
         )
-        _count_gemini_call(request, n=2)  # mockup + B&W = 2 Gemini calls
+
+        # Usage = mockup attempts + judge calls + 1 (B&W).
+        gemini_calls_total = int(mockup_result.get("gemini_calls", 1)) + 1
+        _count_gemini_call(request, n=gemini_calls_total)
+
         measurement = _result_to_dict(result)
         measurement.update(_compute_pricing(result.measured_m, width_inches, bw_bytes))
         return JsonResponse({
-            "mockup_b64":  base64.b64encode(mockup_bytes).decode(),
-            "bw_b64":      base64.b64encode(bw_bytes).decode(),
-            "measurement": measurement,
+            "mockup_b64":    base64.b64encode(mockup_bytes).decode(),
+            "bw_b64":        base64.b64encode(bw_bytes).decode(),
+            "measurement":   measurement,
+            "sign_type":     sign_type,
+            "subtype":       mockup_result.get("subtype"),
+            "attempts":      mockup_result.get("attempts"),
+            "judge_calls":   mockup_result.get("judge_calls"),
+            "judge_log":     mockup_result.get("judge_log"),
+            "final_verdict": mockup_result.get("final_verdict"),
         })
+    except SafetyBlockedError as exc:
+        return JsonResponse({"error": f"Safety filter blocked generation: {exc}"}, status=422)
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=500)
 

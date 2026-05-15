@@ -7,40 +7,40 @@ type Tab = 'mockup' | 'quote';
 
 type Sample = { word: string; color: string; glow: string };
 const SIGN_OPTIONS: Sample[] = [
-  { word: 'OPEN',    color: '#FF1464', glow: '255,20,100' },
-  { word: 'COFFEE',  color: '#FFB400', glow: '255,180,0' },
-  { word: 'LOVE ♡',  color: '#FF1464', glow: '255,20,100' },
-  { word: 'BAR',     color: '#00E5C8', glow: '0,229,200' },
+  { word: 'OPEN', color: '#FF1464', glow: '255,20,100' },
+  { word: 'COFFEE', color: '#FFB400', glow: '255,180,0' },
+  { word: 'LOVE ♡', color: '#FF1464', glow: '255,20,100' },
+  { word: 'BAR', color: '#00E5C8', glow: '0,229,200' },
   { word: 'BOLT ⚡', color: '#FFB400', glow: '255,180,0' },
 ];
 
 const COLOR_OPTIONS = [
-  { hex: '#E8175D', glow: '232,23,93',  name: 'Hot Pink' },
-  { hex: '#FF4500', glow: '255,69,0',   name: 'Red Orange' },
-  { hex: '#D97706', glow: '217,119,6',  name: 'Warm Amber' },
-  { hex: '#0891B2', glow: '8,145,178',  name: 'Neon Cyan' },
-  { hex: '#16A34A', glow: '22,163,74',  name: 'Electric Green' },
+  { hex: '#E8175D', glow: '232,23,93', name: 'Hot Pink' },
+  { hex: '#FF4500', glow: '255,69,0', name: 'Red Orange' },
+  { hex: '#D97706', glow: '217,119,6', name: 'Warm Amber' },
+  { hex: '#0891B2', glow: '8,145,178', name: 'Neon Cyan' },
+  { hex: '#16A34A', glow: '22,163,74', name: 'Electric Green' },
   { hex: '#7C3AED', glow: '124,58,237', name: 'Ultra Violet' },
-  { hex: '#111827', glow: '17,24,39',   name: 'Pure White' },
+  { hex: '#111827', glow: '17,24,39', name: 'Pure White' },
   { hex: '#DB2777', glow: '219,39,119', name: 'Soft Pink' },
 ];
 
 export default function LandingPage() {
   // Hero (small) frame state
-  const [smTab, setSmTab]                 = useState<Tab>('mockup');
-  const [smColor, setSmColor]             = useState(COLOR_OPTIONS[0]);
-  const [smWidth, setSmWidth]             = useState('');
-  const [smBgName, setSmBgName]           = useState('');
-  const [smUv, setSmUv]                   = useState(false);
+  const [smTab, setSmTab] = useState<Tab>('mockup');
+  const [smColor, setSmColor] = useState(COLOR_OPTIONS[0]);
+  const [smWidth, setSmWidth] = useState('');
+  const [smBgName, setSmBgName] = useState('');
+  const [smUv, setSmUv] = useState(false);
 
   // Demo (big) section state
-  const [bigTab, setBigTab]               = useState<Tab>('mockup');
-  const [bigColor, setBigColor]           = useState(COLOR_OPTIONS[0]);
-  const [bigWidth, setBigWidth]           = useState('');
-  const [bigBg, setBigBg]                 = useState<File | null>(null);
-  const [bigUv, setBigUv]                 = useState(false);
-  const [bigUvPart, setBigUvPart]         = useState('');
-  const [bigSign, setBigSign]             = useState<Sample>(SIGN_OPTIONS[0]);
+  const [bigTab, setBigTab] = useState<Tab>('mockup');
+  const [bigColor, setBigColor] = useState(COLOR_OPTIONS[0]);
+  const [bigWidth, setBigWidth] = useState('');
+  const [bigBg, setBigBg] = useState<File | null>(null);
+  const [bigUv, setBigUv] = useState(false);
+  const [bigUvPart, setBigUvPart] = useState('');
+  const [bigSign, setBigSign] = useState<Sample>(SIGN_OPTIONS[0]);
 
   // Scroll-reveal observer
   useEffect(() => {
@@ -268,7 +268,7 @@ export default function LandingPage() {
               <div className="frame-output">
                 <div className="output-tabs-sm">
                   <button className={`tab-sm ${smTab === 'mockup' ? 'active' : ''}`} onClick={() => setSmTab('mockup')}>Mockup</button>
-                  <button className={`tab-sm ${smTab === 'quote' ? 'active' : ''}`}  onClick={() => setSmTab('quote')}>Quote</button>
+                  <button className={`tab-sm ${smTab === 'quote' ? 'active' : ''}`} onClick={() => setSmTab('quote')}>Quote</button>
                 </div>
 
                 {smTab === 'mockup' && (
@@ -518,7 +518,7 @@ export default function LandingPage() {
                             style={{
                               height: 60,
                               background: 'rgba(126, 218, 243, 0.04)',
-                              border: '1px solid rgba(255,180,0,0.25)',
+                              border: '1px solid rgba(255, 180, 0, 0.25)',
                               borderRadius: 8,
                               padding: '10px 12px',
                               margin: 0,
@@ -548,7 +548,7 @@ export default function LandingPage() {
               <div className="big-output-panel">
                 <div className="big-tabs">
                   <button className={`big-tab ${bigTab === 'mockup' ? 'active' : ''}`} onClick={() => setBigTab('mockup')}>✦ Neon Mockup</button>
-                  <button className={`big-tab ${bigTab === 'quote' ? 'active' : ''}`}  onClick={() => setBigTab('quote')}>$ Cost Quote</button>
+                  <button className={`big-tab ${bigTab === 'quote' ? 'active' : ''}`} onClick={() => setBigTab('quote')}>$ Cost Quote</button>
                 </div>
 
                 {bigTab === 'mockup' && (
@@ -607,53 +607,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── FEATURES ───────── */}
-      <section className="section">
-        <div className="wrapper">
-          <div className="reveal">
-            <div className="section-tag">Everything you need</div>
-            <h2 className="section-title">Built for neon shops, end to end.</h2>
-            <p className="section-sub">
-              Neonizer isn&rsquo;t a single tool — it&rsquo;s a full production workflow.
-              Mockup, measure, price, and deliver, all from one platform.
-            </p>
-          </div>
-
-          <div className="features-grid">
-            <div className="feature-card reveal" data-delay="1">
-              <div className="feature-icon">✦</div>
-              <h3>AI Neon Mockup</h3>
-              <p>Drop in a flat brand logo and Neonizer renders a photoreal LED neon mockup — the exact look your customer is signing off on.</p>
-            </div>
-            <div className="feature-card reveal" data-delay="2">
-              <div className="feature-icon cyan">◎</div>
-              <h3>Tube Extraction</h3>
-              <p>Centerlines pulled straight from your mockup. Every path traced, every bend counted. Send the cut sheet to your bender as-is.</p>
-            </div>
-            <div className="feature-card reveal" data-delay="3">
-              <div className="feature-icon amber">$</div>
-              <h3>Breakeven Pricing</h3>
-              <p>Tube length × your cost per metre × your markup. Set it once, every quote uses it. Know your margin before you send anything.</p>
-            </div>
-            <div className="feature-card reveal" data-delay="1">
-              <div className="feature-icon">⬡</div>
-              <h3>Instruction Toolbox</h3>
-              <p>Guide the AI with custom instructions and preset chips — outdoor, RGB, double-sided, wall-mount. The output adapts to your spec.</p>
-            </div>
-            <div className="feature-card reveal" data-delay="2">
-              <div className="feature-icon cyan">{'{ }'}</div>
-              <h3>REST API</h3>
-              <p>One POST request. Everything you see in the dashboard, also as JSON. Bake Neonizer into your existing shop software or CRM.</p>
-            </div>
-            <div className="feature-card reveal" data-delay="3">
-              <div className="feature-icon amber">⚡</div>
-              <h3>Always On, Sub-5s</h3>
-              <p>Quote a wedding sign at 11 pm. Process 200 in a morning. Same &lt;5 second speed, 24/7. No queue, no downtime.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ───────── HOW IT WORKS ───────── */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="wrapper">
@@ -707,51 +660,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ───────── FOOTER ───────── */}
-      <footer className="footer">
-        <div className="wrapper">
-          <div className="footer-grid">
-            <div className="footer-brand">
-              <div className="nav-logo">
-                <span className="logo-dot" />
-                Neonizer
-              </div>
-              <p>Precision tube-length measurement and instant quoting for neon sign manufacturers. Built for the shop floor.</p>
-            </div>
-            <div className="footer-col">
-              <h5>Product</h5>
-              <ul>
-                <li><Link href="/studio">Studio</Link></li>
-                <li><Link href="/dashboard">Quick Measure</Link></li>
-                <li><Link href="/pricing">Pricing</Link></li>
-                <li><Link href="#">API</Link></li>
-              </ul>
-            </div>
-            <div className="footer-col">
-              <h5>Resources</h5>
-              <ul>
-                <li><Link href="#">Documentation</Link></li>
-                <li><Link href="#">Tutorials</Link></li>
-                <li><Link href="#">Blog</Link></li>
-                <li><Link href="#">FAQ</Link></li>
-              </ul>
-            </div>
-            <div className="footer-col">
-              <h5>Company</h5>
-              <ul>
-                <li><Link href="#">About</Link></li>
-                <li><Link href="#">Contact</Link></li>
-                <li><Link href="#">Status</Link></li>
-                <li><Link href="#">Terms</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <span>© 2026 Neonizer. All rights reserved.</span>
-            <span>Built for neon manufacturers.</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

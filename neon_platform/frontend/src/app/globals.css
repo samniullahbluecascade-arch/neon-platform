@@ -2248,3 +2248,31 @@ img { max-width: 100%; display: block; }
     0 0 0 1px rgba(255, 255, 255, 0.55) inset;
   transform: translateY(-2px);
 }
+
+/* ─── Generating Animation (Studio) ──────────────────────────── */
+.neon-ring-spin {
+  animation: neon-spin 1.2s linear infinite;
+}
+
+@keyframes neon-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.neon-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+.timer-blink {
+  animation: timer-blink-anim 1s ease-in-out infinite;
+}
+
+@keyframes timer-blink-anim {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.2; }
+}

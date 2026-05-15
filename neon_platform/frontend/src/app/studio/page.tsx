@@ -1,10 +1,9 @@
 'use client';
-import { useEffect, useState, useRef, ChangeEvent } from 'react';
+import { useEffect, useState, useRef, useCallback, ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { studio, MeasurementResult } from '@/lib/api';
 import NavBar from '@/components/NavBar';
-import PipelineStrip, { Phase } from '@/components/PipelineStrip';
 
 type Tab  = 'mockup' | 'quote';
 type Mode = 'full' | 'bw-only';
@@ -69,11 +68,7 @@ export default function StudioPage() {
 
   // Pipeline state
   const [busy,  setBusy]   = useState(false);
-  const [phase, setPhase]  = useState<Phase>('idle');
   const [error, setError]  = useState('');
-  const phaseTimers  = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const phaseTimings = useRef<Partial<Record<Exclude<Phase, 'idle' | 'done' | 'error'>, number>>>({});
-  const phaseStarts  = useRef<Partial<Record<Exclude<Phase, 'idle' | 'done' | 'error'>, number>>>({});
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -86,9 +81,7 @@ export default function StudioPage() {
     setBwB64(null);
     setMeasurement(null);
     setError('');
-    setPhase('idle');
     setTab('mockup');
-    stopPhases();
   };
 
   const onLogo = (e: ChangeEvent<HTMLInputElement>) => {
@@ -119,54 +112,7 @@ export default function StudioPage() {
     return parts.join(' ');
   };
 
-  const stopPhases = () => {
-    phaseTimers.current.forEach(clearTimeout);
-    phaseTimers.current = [];
-  };
 
-  const advancePhase = (p: Exclude<Phase, 'idle' | 'done' | 'error'>) => {
-    const now = Date.now();
-    setPhase(prev => {
-      if (prev !== 'idle' && prev !== 'done' && prev !== 'error') {
-        const start = phaseStarts.current[prev];
-        if (start != null) phaseTimings.current[prev] = now - start;
-      }
-      phaseStarts.current[p] = now;
-      return p;
-    });
-  };
-
-  const startPhases = (kind: 'full' | 'bw') => {
-    stopPhases();
-    phaseTimings.current = {};
-    phaseStarts.current  = {};
-    if (kind === 'full') {
-      advancePhase('drawing');
-      phaseTimers.current.push(setTimeout(() => advancePhase('tracing'), 4500));
-      phaseTimers.current.push(setTimeout(() => advancePhase('pricing'), 7200));
-    } else {
-      advancePhase('drawing');
-      phaseTimers.current.push(setTimeout(() => advancePhase('tracing'), 700));
-      phaseTimers.current.push(setTimeout(() => advancePhase('pricing'), 2600));
-    }
-  };
-
-  const finishPhases = () => {
-    stopPhases();
-    const now = Date.now();
-    setPhase(prev => {
-      if (prev !== 'idle' && prev !== 'done' && prev !== 'error') {
-        const start = phaseStarts.current[prev];
-        if (start != null) phaseTimings.current[prev] = now - start;
-      }
-      return 'done';
-    });
-  };
-
-  const failPhases = () => {
-    stopPhases();
-    setPhase('error');
-  };
 
   const runFullPipeline = async () => {
     if (!logo) { setError('Upload a sign design first.'); return; }
@@ -174,7 +120,6 @@ export default function StudioPage() {
     if (!w) { setError('Enter a valid sign width (in inches).'); return; }
     setMockupB64(null); setBwB64(null); setMeasurement(null);
     setBusy(true); setError('');
-    startPhases('full');
     try {
       const fd = new FormData();
       fd.append('logo', logo);
@@ -188,10 +133,8 @@ export default function StudioPage() {
       setMockupB64(r.mockup_b64);
       setBwB64(r.bw_b64);
       setMeasurement(r.measurement);
-      finishPhases();
       setTab('mockup');
     } catch (e: unknown) {
-      failPhases();
       setError(e instanceof Error ? e.message : 'Pipeline failed');
     } finally {
       setBusy(false);
@@ -204,7 +147,6 @@ export default function StudioPage() {
     if (!w) { setError('Enter a valid sign width (in inches).'); return; }
     setBwB64(null); setMeasurement(null);
     setBusy(true); setError('');
-    startPhases('bw');
     try {
       const fd = new FormData();
       fd.append('mockup', mockupFile);
@@ -216,10 +158,8 @@ export default function StudioPage() {
       const r = await studio.bwOnlyPipeline(fd);
       setBwB64(r.bw_b64);
       setMeasurement(r.measurement);
-      finishPhases();
       setTab('mockup');
     } catch (e: unknown) {
-      failPhases();
       setError(e instanceof Error ? e.message : 'Pipeline failed');
     } finally {
       setBusy(false);
@@ -267,24 +207,6 @@ export default function StudioPage() {
             }}>
               <ModeBtn active={mode === 'full'}    onClick={() => { setMode('full');    reset(); }}>Full pipeline</ModeBtn>
               <ModeBtn active={mode === 'bw-only'} onClick={() => { setMode('bw-only'); reset(); }}>Sketch &amp; quote only</ModeBtn>
-            </div>
-            <div style={{
-              marginTop: 14,
-              padding: '12px 14px',
-              background: 'var(--bg)',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              fontSize: '0.8rem',
-              color: 'var(--text-2)',
-              lineHeight: 1.55,
-            }}>
-              <strong style={{ color: 'var(--text)' }}>What happens when you click Generate</strong>
-              <span style={{ color: 'var(--text-3)', margin: '0 0.35rem' }}>·</span>
-              {mode === 'full' ? (
-                <>Step 1 builds the neon mockup from your logo. Step 2 traces tubes and measures total length. Step 3 applies your sign-type rate, markup, shipping, and any UV add-on.</>
-              ) : (
-                <>Step 1 converts your mockup to a B&amp;W cut sheet. Step 2 measures tube length from that sheet. Step 3 builds the quote the same way as the full pipeline.</>
-              )}
             </div>
           </div>
 
@@ -389,9 +311,9 @@ export default function StudioPage() {
                         cursor: 'pointer',
                       }}
                     >
-                      <option value="standard">Standard indoor — ×$10 per metre of neon</option>
-                      <option value="outdoor">Outdoor sign — ×$20 per metre of neon</option>
-                      <option value="rgb">RGB sign — ×$15 per metre of neon</option>
+                      <option value="standard">Standard indoor</option>
+                      <option value="outdoor">Outdoor sign</option>
+                      <option value="rgb">RGB sign</option>
                     </select>
                   </div>
                 </div>
@@ -460,34 +382,6 @@ export default function StudioPage() {
                       </span>
                       {bg && <span style={{ marginLeft: 'auto', color: 'var(--cyan)' }}>✓</span>}
                     </label>
-                  </div>
-                )}
-
-                {/* Known length (BW mode only) */}
-                {mode === 'bw-only' && (
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Known Length (Optional)
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="e.g. 2.5"
-                        value={gt}
-                        onChange={e => setGt(e.target.value)}
-                        style={{
-                          flex: 1,
-                          padding: '10px 12px',
-                          background: 'var(--bg)',
-                          border: '1px solid var(--border)',
-                          borderRadius: 6,
-                          color: 'var(--text)',
-                          fontSize: '0.9rem',
-                        }}
-                      />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>m</span>
-                    </div>
                   </div>
                 )}
 
@@ -642,166 +536,88 @@ export default function StudioPage() {
           }}>
             <div className="panel-label" style={{ marginBottom: 12 }}>Results</div>
 
-            {phase !== 'idle' && (
-              <div style={{ marginBottom: 14, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' }}>
-                <PipelineStrip phase={phase} timings={phaseTimings.current} pipelineMode={mode === 'bw-only' ? 'bw' : 'full'} />
-              </div>
-            )}
-
-            {/* Tabs */}
-            <div style={{
-              display: 'flex',
-              gap: 8,
-              marginBottom: 16,
-              borderBottom: '1px solid var(--border)',
-              paddingBottom: 12,
-            }}>
-              <button
-                onClick={() => setTab('mockup')}
-                disabled={mode === 'bw-only' && !bwB64}
-                style={{
-                  padding: '8px 16px',
-                  background: tab === 'mockup' ? '#f6a6f6' : 'transparent',
-                  color: tab === 'mockup' ? '#000000' : 'var(--text-2)',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: mode === 'bw-only' && !bwB64 ? 'not-allowed' : 'pointer',
-                  opacity: mode === 'bw-only' && !bwB64 ? 0.5 : 1,
-                }}
-              >
-                {mode === 'full' ? 'Neon mockup' : 'B&W cut sheet'}
-              </button>
-              <button
-                onClick={() => setTab('quote')}
-                disabled={!measurement}
-                style={{
-                  padding: '8px 16px',
-                  background: tab === 'quote' ? '#ff6d6d' : 'transparent',
-                  color: tab === 'quote' ? '#000000' : 'var(--text-2)',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: !measurement ? 'not-allowed' : 'pointer',
-                  opacity: !measurement ? 0.5 : 1,
-                }}
-              >
-                $ Quote
-              </button>
-            </div>
-
-            {/* Mockup Tab */}
-            {tab === 'mockup' && (
-              <div>
-                {busy && (phase === 'drawing' || phase === 'tracing') ? (
+            {/* Results Display */}
+            <div>
+              {busy && !(mode === 'full' ? mockupB64 : bwB64) ? (
+                <GeneratingAnimation mode={mode} />
+              ) : (mode === 'full' ? mockupB64 : bwB64) ? (
+                <div style={{
+                  background: '#020209',
+                  minHeight: 200,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  borderRadius: 8,
+                }}>
                   <div style={{
-                    padding: 48,
-                    textAlign: 'center',
-                    background: 'var(--surface)',
-                    borderRadius: 8,
-                    border: '1px dashed var(--border)',
-                  }}>
-                    <div className="studio-spinner" style={{
-                      width: 36,
-                      height: 36,
-                      margin: '0 auto 14px',
-                      borderRadius: '50%',
-                      border: '3px solid var(--border)',
-                      borderTopColor: 'var(--pink)',
-                    }} />
-                    <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>
-                      {phase === 'drawing'
-                        ? (mode === 'full' ? 'Step 1 of 3 — building your mockup…' : 'Step 1 of 3 — building your cut sheet…')
-                        : 'Step 2 of 3 — measuring tube length…'}
-                    </div>
-                    <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: 'var(--text-3)' }}>
-                      This usually takes a few seconds. Stay on this page.
-                    </p>
-                  </div>
-                ) : (mode === 'full' ? mockupB64 : bwB64) ? (
-                  <div style={{
-                    background: '#020209',
-                    minHeight: 200,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    borderRadius: 8,
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'radial-gradient(ellipse at center, rgba(232,23,93,0.10) 0%, transparent 60%)',
-                      pointerEvents: 'none',
-                    }} />
-                    <img
-                      src={`data:image/png;base64,${mode === 'full' ? mockupB64 : bwB64}`}
-                      alt={mode === 'full' ? "mockup" : "sketch"}
-                      style={{ maxWidth: '100%', maxHeight: 280, position: 'relative', zIndex: 1 }}
-                    />
-                  </div>
-                ) : (
-                  <div style={{
-                    padding: 40,
-                    textAlign: 'center',
-                    color: 'var(--text-3)',
-                    fontSize: '0.85rem',
-                    background: 'var(--bg)',
-                    borderRadius: 8,
-                  }}>
-                    Click <strong style={{ color: 'var(--text-2)' }}>Generate</strong> to see results.
-                  </div>
-                )}
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'radial-gradient(ellipse at center, rgba(232,23,93,0.10) 0%, transparent 60%)',
+                    pointerEvents: 'none',
+                  }} />
+                  <img
+                    src={`data:image/png;base64,${mode === 'full' ? mockupB64 : bwB64}`}
+                    alt={mode === 'full' ? "mockup" : "sketch"}
+                    style={{ maxWidth: '100%', maxHeight: 280, position: 'relative', zIndex: 1 }}
+                  />
+                </div>
+              ) : (
+                <div style={{
+                  padding: 40,
+                  textAlign: 'center',
+                  color: 'var(--text-3)',
+                  fontSize: '0.85rem',
+                  background: 'var(--bg)',
+                  borderRadius: 8,
+                }}>
+                  Click <strong style={{ color: 'var(--text-2)' }}>Generate</strong> to see results.
+                </div>
+              )}
 
-                {(mode === 'full' ? mockupB64 : bwB64) && (
-                  <a
-                    href={`data:image/png;base64,${mode === 'full' ? mockupB64 : bwB64}`}
-                    download={mode === 'full' ? "neon_mockup.png" : "cut_sheet.png"}
-                    style={{
-                      display: 'block',
-                      marginTop: 12,
-                      padding: '10px 14px',
-                      background: 'var(--surface-2)',
-                      borderRadius: 6,
-                      textAlign: 'center',
-                      fontSize: '0.8rem',
-                      fontWeight: 500,
-                      color: 'var(--text-2)',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    ↓ Download {mode === 'full' ? 'mockup' : 'cut sheet'}
-                  </a>
-                )}
-
-                {measurement && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: 8,
+              {(mode === 'full' ? mockupB64 : bwB64) && (
+                <a
+                  href={`data:image/png;base64,${mode === 'full' ? mockupB64 : bwB64}`}
+                  download={mode === 'full' ? "neon_mockup.png" : "cut_sheet.png"}
+                  style={{
+                    display: 'block',
                     marginTop: 12,
-                  }}>
-                    <Detail label="Tube length" value={`${measurement.measured_m.toFixed(2)} m`} />
-                    <Detail label="Sign quality" value={TIER_LABELS[measurement.tier] ?? measurement.tier} variant={measurement.tier === 'GLASS_CUT' ? 'green' : undefined} />
-                    <Detail label="Confidence" value={`${(measurement.confidence * 100).toFixed(0)}%`} />
-                    <Detail label="Processing time" value={`${measurement.elapsed_s?.toFixed(1) ?? '—'} s`} />
-                  </div>
-                )}
-              </div>
-            )}
+                    padding: '10px 14px',
+                    background: 'var(--surface-2)',
+                    borderRadius: 6,
+                    textAlign: 'center',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    color: 'var(--text-2)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  ↓ Download {mode === 'full' ? 'mockup' : 'cut sheet'}
+                </a>
+              )}
 
-            {/* Quote Tab */}
-            {tab === 'quote' && (
+              {measurement && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: 8,
+                  marginTop: 12,
+                }}>
+                  <Detail label="Tube length" value={`${measurement.measured_m.toFixed(2)} m`} />
+                  <Detail label="Sign quality" value={TIER_LABELS[measurement.tier] ?? measurement.tier} variant={measurement.tier === 'GLASS_CUT' ? 'green' : undefined} />
+                  <Detail label="Confidence" value={`${(measurement.confidence * 100).toFixed(0)}%`} />
+                  <Detail label="Processing time" value={`${measurement.elapsed_s?.toFixed(1) ?? '—'} s`} />
+                </div>
+              )}
+
               <QuoteTab
                 measurement={measurement}
                 loading={busy}
                 uvNeon={uvNeon}
                 signType={signType}
               />
-            )}
+            </div>
 
           </div>
             </div>
@@ -855,28 +671,7 @@ function Detail({ label, value, variant }: {
 function QuoteTab({ measurement, loading, uvNeon, signType }: {
   measurement: MeasurementResult | null; loading: boolean; uvNeon: boolean; signType: SignType;
 }) {
-  if (loading) {
-    return (
-      <div style={{ padding: 60, textAlign: 'center', background: 'var(--bg)', borderRadius: 8 }}>
-        <span style={{
-          color: 'var(--amber)',
-          fontWeight: 600,
-          letterSpacing: '0.1em',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.78rem',
-        }}>
-          PRICING IT OUT…
-        </span>
-      </div>
-    );
-  }
-  if (!measurement) {
-    return (
-      <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)', fontSize: '0.85rem', background: 'var(--bg)', borderRadius: 8 }}>
-        Click <strong style={{ color: 'var(--text-2)' }}>Generate</strong> to see the cost breakdown.
-      </div>
-    );
-  }
+  if (!measurement || loading) return null;
 
   const len           = measurement.measured_m;
   const costPerMetre  = SIGN_TYPE_MULTIPLIERS[signType];
@@ -891,54 +686,152 @@ function QuoteTab({ measurement, loading, uvNeon, signType }: {
     <div style={{
       background: 'var(--bg)',
       borderRadius: 8,
-      padding: 20,
+      marginTop: 12,
     }}>
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Tube length</span>
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>{len.toFixed(2)} m</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Neon material rate ({SIGN_TYPE_LABELS[signType]})</span>
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>${costPerMetre.toFixed(2)}/m</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Raw material cost</span>
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>${rawMaterial.toFixed(2)}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Markup ({(MARKUP_RATE * 100).toFixed(0)}%)</span>
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>${markupAmount.toFixed(2)}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-          <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>Shipping Cost</span>
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>{shipping > 0 ? `+$${shipping.toFixed(2)}` : '$0.00'}</span>
-        </div>
-        {uvSurcharge > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-3)', fontSize: '0.85rem' }}>UV print surcharge</span>
-            <span style={{ color: 'var(--text)', fontWeight: 600 }}>+${uvSurcharge.toFixed(2)}</span>
-          </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0 0', marginTop: 8, borderTop: '2px solid var(--text)' }}>
-          <span style={{ color: 'var(--text)', fontSize: '1rem', fontWeight: 700 }}>Total Quote</span>
-          <span style={{ color: 'var(--cyan)', fontSize: '1.25rem', fontWeight: 700 }}>${total.toFixed(2)}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)' }}>
+        <span style={{ color: 'var(--text)', fontSize: '1rem', fontWeight: 700 }}>Total Quote</span>
+        <span style={{ color: 'var(--cyan)', fontSize: '1.25rem', fontWeight: 700 }}>${total.toFixed(2)}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Fancy Generating Animation ─────────────────────────────── */
+
+const LOADING_MESSAGES = [
+  { text: 'Analyzing your design…', icon: '🔍' },
+  { text: 'Tracing neon tube paths…', icon: '✨' },
+  { text: 'Bending the glass tubes…', icon: '🌟' },
+  { text: 'Mixing neon gas colors…', icon: '🌈' },
+  { text: 'Mounting on the wall…', icon: '🔨' },
+  { text: 'Adjusting the glow…', icon: '💡' },
+  { text: 'Perfecting the lighting…', icon: '🌃' },
+  { text: 'Adding the final touches…', icon: '🎨' },
+  { text: 'Almost there…', icon: '🚀' },
+];
+
+function GeneratingAnimation({ mode }: { mode: Mode }) {
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const cycle = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setMsgIdx(i => (i + 1) % LOADING_MESSAGES.length);
+        setFade(true);
+      }, 300);
+    }, 5000);
+    return () => clearInterval(cycle);
+  }, []);
+
+  const msg = LOADING_MESSAGES[msgIdx];
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  const timeStr = mins > 0 ? `${mins}m ${secs.toString().padStart(2, '0')}s` : `${secs}s`;
+
+  return (
+    <div style={{
+      padding: '44px 24px',
+      textAlign: 'center',
+      background: 'linear-gradient(180deg, rgba(232,23,93,0.04) 0%, var(--surface) 100%)',
+      borderRadius: 8,
+      border: '1px solid var(--border)',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Animated neon ring */}
+      <div style={{
+        width: 64,
+        height: 64,
+        margin: '0 auto 20px',
+        borderRadius: '50%',
+        position: 'relative',
+      }}>
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          border: '3px solid rgba(232,23,93,0.15)',
+        }} />
+        <div className="neon-ring-spin" style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          border: '3px solid transparent',
+          borderTopColor: '#E8175D',
+          borderRightColor: 'rgba(232,23,93,0.4)',
+          filter: 'drop-shadow(0 0 6px rgba(232,23,93,0.6))',
+        }} />
+        <div className="neon-glow-pulse" style={{
+          position: 'absolute',
+          inset: -8,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(232,23,93,0.15) 0%, transparent 70%)',
+        }} />
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.5rem',
+          transition: 'opacity 0.3s ease',
+          opacity: fade ? 1 : 0,
+        }}>
+          {msg.icon}
         </div>
       </div>
 
+      {/* Cycling message */}
       <div style={{
-        padding: '12px 14px',
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 6,
-        fontSize: '0.72rem',
-        color: 'var(--text-3)',
-        lineHeight: 1.5,
+        fontSize: '0.92rem',
+        fontWeight: 600,
+        color: 'var(--text)',
+        marginBottom: 6,
+        transition: 'opacity 0.3s ease',
+        opacity: fade ? 1 : 0,
+        minHeight: '1.4em',
       }}>
-        <strong style={{ color: 'var(--text-2)' }}>Pricing formula:</strong>{' '}
-        (length × ${costPerMetre}/m) + {(MARKUP_RATE * 100).toFixed(0)}% markup
-        {shipping > 0 ? ' + shipping' : ''}
-        {uvSurcharge > 0 ? ' + UV surcharge' : ''}
+        {msg.text}
+      </div>
+
+      <p style={{
+        margin: '0 0 16px',
+        fontSize: '0.75rem',
+        color: 'var(--text-3)',
+      }}>
+        Crafting your {mode === 'full' ? 'neon mockup' : 'cut sheet'} — stay on this page
+      </p>
+
+      {/* Elapsed timer */}
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 14px',
+        background: 'rgba(232,23,93,0.08)',
+        border: '1px solid rgba(232,23,93,0.2)',
+        borderRadius: 20,
+        fontSize: '0.72rem',
+        fontWeight: 600,
+        fontFamily: 'var(--font-mono)',
+        color: 'var(--pink, #E8175D)',
+        fontVariantNumeric: 'tabular-nums',
+      }}>
+        <span className="timer-blink" style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: '#E8175D',
+        }} />
+        {timeStr}
       </div>
     </div>
   );
