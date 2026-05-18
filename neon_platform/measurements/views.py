@@ -396,23 +396,21 @@ def api_full_pipeline(request):
         return JsonResponse({"error": str(exc)}, status=500)
 
 
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def api_bw_only_pipeline(request):
     """
-    POST /api/bw_only_pipeline
-    Expects multipart/form-data with fields:
+    POST /api/bw_only_pipeline/
+    Multipart fields:
         - mockup (file, required)
         - width_inches (float, required)
         - height_inches (float, optional)
         - additional (text, optional)
+        - uv (text, optional)
         - force_format (text, optional)
         - ground_truth_m (float, optional)
     Returns JSON with the V8Result fields.
     """
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
     mockup_file = request.FILES.get("mockup")
     if not mockup_file:
         return JsonResponse({"error": "Missing mockup file"}, status=400)
@@ -456,24 +454,25 @@ def api_bw_only_pipeline(request):
         return JsonResponse({"error": str(exc)}, status=500)
 
 
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def api_measure(request):
     """
-    POST /measure
-    Legacy endpoint used by the original Flask app.
+    POST /api/measure/
+    Legacy direct measurement endpoint (no Celery job).
     Accepts the same fields as JobCreateView and returns the measurement result
-    directly (no job polling).
+    directly (no polling).
     """
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
-    # Reuse the existing serializer logic from JobCreateView. DRF serializers
-    # take a single `data=` kwarg — merge POST + FILES into one mutable
-    # QueryDict so the ImageField sees the upload.
+    # Merge POST + FILES into a mutable QueryDict, then hand to the serializer.
+    # Reset file pointers because DRF / Django may have advanced them during
+    # multipart parsing — ImageField re-reads via Pillow and needs offset 0.
     merged = request.POST.copy()
-    for k, v in request.FILES.items():
-        merged[k] = v
+    for k, f in request.FILES.items():
+        try:
+            f.seek(0)
+        except Exception:
+            pass
+        merged[k] = f
     serializer = JobCreateSerializer(data=merged)
     if not serializer.is_valid():
         return JsonResponse({"error": serializer.errors}, status=400)
@@ -504,17 +503,13 @@ def api_measure(request):
         return JsonResponse({"error": str(exc)}, status=500)
 
 
-@csrf_exempt
-@permission_classes([permissions.AllowAny])
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
 def api_evaluate(request):
     """
-    GET /evaluate
-    Runs batch evaluation over the Ground_Truth folder (same behaviour as the
-    original Flask endpoint). Returns JSON with the evaluation summary.
+    GET /api/evaluate/
+    Runs batch evaluation over the Ground_Truth folder. Returns JSON summary.
     """
-    if request.method != "GET":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
     try:
         from v8_pipeline import batch_evaluate, TIER_THRESHOLDS
 

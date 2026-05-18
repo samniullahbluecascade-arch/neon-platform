@@ -23,6 +23,32 @@ const SIGN_TYPE_LABELS: Record<SignType, string> = {
   rgb: 'RGB Sign',
 };
 
+// Subtype options match keys in v8_generate.py OUTDOOR_SUBTYPE_CLAUSES / INDOOR_SUBTYPE_CLAUSES.
+const SUBTYPE_OPTIONS_OUTDOOR: { value: string; label: string }[] = [
+  { value: 'facade_storefront', label: 'Facade storefront' },
+  { value: 'pole_sign',         label: 'Pole sign' },
+  { value: 'monument_sign',     label: 'Monument sign' },
+  { value: 'wayfinding_sign',   label: 'Wayfinding sign' },
+  { value: 'blade_sign',        label: 'Blade / projection sign' },
+  { value: 'standalone_sign',   label: 'Standalone sign' },
+  { value: 'subway_sign',       label: 'Subway / transit sign' },
+];
+
+const SUBTYPE_OPTIONS_INDOOR: { value: string; label: string }[] = [
+  { value: 'living_room',           label: 'Living room' },
+  { value: 'cafe_bar',              label: 'Cafe bar' },
+  { value: 'restaurant_booth',      label: 'Restaurant booth' },
+  { value: 'bedroom',               label: 'Bedroom' },
+  { value: 'studio_office',         label: 'Studio / office' },
+  { value: 'retail_store_interior', label: 'Retail interior' },
+  { value: 'barbershop',            label: 'Barbershop' },
+  { value: 'tattoo_parlor',         label: 'Tattoo parlor' },
+  { value: 'gym',                   label: 'Gym' },
+];
+
+const subtypeOptionsFor = (s: SignType) =>
+  s === 'outdoor' ? SUBTYPE_OPTIONS_OUTDOOR : SUBTYPE_OPTIONS_INDOOR;
+
 const TIER_LABELS: Record<string, string> = {
   GLASS_CUT: 'Cut-ready',
   QUOTE:     'Quote-grade',
@@ -57,6 +83,7 @@ export default function StudioPage() {
   const [neonColor, setNeonColor]   = useState(COLOR_OPTIONS[0]);
   const [width, setWidth]           = useState('24');
   const [signType, setSignType]     = useState<SignType>('standard');
+  const [subtype, setSubtype]       = useState<string>('auto');
   const [uvNeon, setUvNeon]         = useState(false);
   const [uvPart, setUvPart]         = useState('');
   const [gt, setGt]                 = useState('');
@@ -128,6 +155,7 @@ export default function StudioPage() {
       if (uvText()) fd.append('uv', uvText());
       fd.append('width_inches', String(w));
       fd.append('sign_type', signType);
+      if (subtype && subtype !== 'auto') fd.append('subtype', subtype);
       if (gt) fd.append('ground_truth_m', gt);
       const r = await studio.fullPipeline(fd);
       setMockupB64(r.mockup_b64);
@@ -154,6 +182,7 @@ export default function StudioPage() {
       if (uvText()) fd.append('uv', uvText());
       fd.append('width_inches', String(w));
       fd.append('sign_type', signType);
+      if (subtype && subtype !== 'auto') fd.append('subtype', subtype);
       if (gt) fd.append('ground_truth_m', gt);
       const r = await studio.bwOnlyPipeline(fd);
       setBwB64(r.bw_b64);
@@ -299,7 +328,10 @@ export default function StudioPage() {
                     </label>
                     <select
                       value={signType}
-                      onChange={e => setSignType(e.target.value as SignType)}
+                      onChange={e => {
+                        setSignType(e.target.value as SignType);
+                        setSubtype('auto');  // reset subtype pool changed
+                      }}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -316,6 +348,32 @@ export default function StudioPage() {
                       <option value="rgb">RGB sign</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Subtype (environment / mount style) */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-3)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {signType === 'outdoor' ? 'Outdoor mount style' : 'Indoor scene'} <span style={{ color: 'var(--text-3)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span>
+                  </label>
+                  <select
+                    value={subtype}
+                    onChange={e => setSubtype(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 6,
+                      color: 'var(--text)',
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="auto">Auto (random)</option>
+                    {subtypeOptionsFor(signType).map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Neon Color */}
